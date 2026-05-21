@@ -1,7 +1,7 @@
 /* Service worker — Relevé Terrain WADRA Bay
    Met l'application en cache pour un fonctionnement 100% hors-ligne
    une fois la page chargée une première fois avec du réseau. */
-const CACHE = 'wadra-releve-v1';
+const CACHE = 'wadra-releve-v2';
 
 self.addEventListener('install', function (e) {
   e.waitUntil(

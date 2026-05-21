@@ -506,6 +506,7 @@ function renderZone(){
   html+='</div>';
 
   html+='<button class="addeq" id="addEq">'+IC.plus+' Ajouter un équipement</button>';
+  html+='<button class="btn ghost" id="expZoneBtn" style="margin-top:10px">'+IC.exp+' Exporter cette zone</button>';
 
   $('app').innerHTML=html;
 
@@ -516,6 +517,7 @@ function renderZone(){
     ch.onclick=()=>{zoneFilter=ch.dataset.f;renderZone();};
   });
   $('addEq').onclick=()=>addCustom(z.id);
+  $('expZoneBtn').onclick=()=>doExportZone(z.id);
   bindEqCards(z);
   applyFilter();
   $('fab').classList.add('hidden');
@@ -741,6 +743,63 @@ async function delCustom(zoneId,cid){
   renderZone();
 }
 
+/* ====================== EXPORT D'UNE SEULE ZONE ====================== */
+function buildWorkbookOneZone(z,namesByKey){
+  const wb=XLSX.utils.book_new();
+  const HEAD=['N°','À relever ?','Équipement','Qté constatée','Local précis','Réf. / Preuve',
+    'Notice dispo ?','Marque connue','Marque relevée','Modèle connu','Modèle relevé',
+    'Puissance connue','Puissance relevée','Statut relevé','Photos','Observations terrain','À vérifier sur place'];
+  const zf=state.zones[z.id]||{};
+  const aoa=[[z.title],[z.ref],
+    ['Relevé par : '+(state.meta.auditeur||''),'Date : '+(zf.date||''),
+     'Tableau électrique : '+(zf.tableau||''),'Mode fonct. : '+(zf.mode||'')],[],HEAD];
+  zoneEquip(z).forEach(eq=>{
+    const b=eq.base;const f=state.equip[eq.key]||{};
+    aoa.push([eq.isCustom?('Ajout '+eq.cid):b.n,eq.isCustom?'AJOUTÉ SUR SITE':b.aRelever,b.equipement,
+      (f.qte!==undefined?f.qte:b.qte)||'',(f.local!==undefined?f.local:b.local)||'',
+      b.ref||'',b.notice||'',b.marque||'',f.marque||'',b.modele||'',f.modele||'',
+      b.puissance||'',f.puissance||'',statLabel(f.statut),(namesByKey[eq.key]||[]).join('\n'),
+      f.observations||'',b.aVerifier||'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:8},{wch:13},{wch:32},{wch:12},{wch:20},{wch:22},{wch:18},
+    {wch:15},{wch:15},{wch:15},{wch:15},{wch:15},{wch:16},{wch:12},{wch:26},{wch:34},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws,z.tab.replace(/[\[\]\*\?\/\\:]/g,' ').slice(0,31));
+  return wb;
+}
+async function doExportZone(zoneId){
+  try{
+    const z=zoneById(zoneId);
+    toast('Préparation de la zone '+z.id+'…');
+    await persistState();
+    const files=[]; const namesByKey={};
+    zoneEquip(z).forEach(eq=>{
+      const ps=photosFor(eq.key);
+      if(!ps.length) return;
+      const code=eq.isCustom?('C'+eq.cid):('E'+eq.n);
+      const nm=slug(eq.base.equipement);
+      const list=[];
+      ps.forEach((p,i)=>{
+        const fname='Z'+pad2(z.id)+'_'+code+'_'+nm+'_'+(i+1)+'.jpg';
+        list.push(fname); files.push({name:fname,blob:p.blob});
+      });
+      namesByKey[eq.key]=list;
+    });
+    const base='WADRA_Z'+pad2(z.id)+'_'+slug(zoneShortName(z));
+    const out=[];
+    const arr=XLSX.write(buildWorkbookOneZone(z,namesByKey),{bookType:'xlsx',type:'array'});
+    out.push(new File([arr],base+'.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    if(files.length){
+      const zip=new JSZip();
+      files.forEach(f=>zip.file(base+'_photos/'+f.name,f.blob));
+      const blob=await zip.generateAsync({type:'blob'});
+      out.push(new File([blob],base+'_photos.zip',{type:'application/zip'}));
+    }
+    await deliver(out);
+    toast('Zone '+z.id+' exportée — '+files.length+' photo(s)');
+  }catch(e){ toast('Erreur export zone : '+e.message); }
+}
+
 /* ====================== RENDU : EXPORT ====================== */
 function renderExport(){
   const g=globalCounts();
@@ -760,7 +819,7 @@ function renderExport(){
 
   html+='<div class="panel"><h2>Exporter le relevé</h2>'+
     '<p class="small muted" style="margin-bottom:11px">Génère un fichier Excel (1 onglet par zone, reproduisant la grille v7) '+
-      'et un dossier ZIP contenant toutes les photos nommées automatiquement.</p>'+
+      'et un dossier ZIP des photos. Pour limiter le poids des envois, vous pouvez aussi exporter <b>zone par zone</b> &mdash; bouton en bas de chaque zone.</p>'+
     '<button class="btn primary" id="expAll">'+IC.exp+' Tout exporter (Excel + photos)</button>'+
     '<button class="btn sec" id="expXls">Excel seul (.xlsx)</button>'+
     '<button class="btn sec" id="expZip">Photos seules (.zip)</button>'+
