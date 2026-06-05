@@ -207,6 +207,8 @@ hr.sep{border:none;border-top:1px solid #eef1f2;margin:12px 0}
 <script src="./data_z8.js"></script>
 <script src="./data_z9.js"></script>
 <script src="./data_z10.js"></script>
+<script src="./config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
 
@@ -278,6 +280,16 @@ async function persistState(){
   }catch(e){
     try{ localStorage.setItem('wadra_state_v2', JSON.stringify(state)); }catch(_){}
   }
+}
+
+/* ====================== SYNCHRO : marquage des modifications ====================== */
+function touch(id){
+  state.ts = state.ts || {};
+  state.dirty = state.dirty || {};
+  state.ts[id] = new Date().toISOString();
+  state.dirty[id] = 1;
+  scheduleSave();
+  if(window.Sync && window.Sync.kick) window.Sync.kick();
 }
 
 /* ====================== HELPERS ====================== */
@@ -358,7 +370,7 @@ $('camInput').addEventListener('change', async function(){
     try{
       const blob=await shrink(f);
       const id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-      const rec={id:id,key:photoTargetKey,zoneId:photoTargetZone,blob:blob};
+      const rec={id:id,key:photoTargetKey,zoneId:photoTargetZone,blob:blob,synced:false};
       if(idbOK){ await idbPut('photos',rec); }
       rec.url=URL.createObjectURL(blob);
       photos[id]=rec;
@@ -367,15 +379,19 @@ $('camInput').addEventListener('change', async function(){
   renderPhotoStrip(photoTargetKey);
   refreshEqStatus(photoTargetKey);
   toast('Photo(s) enregistrée(s)');
+  if(window.Sync && window.Sync.kick) window.Sync.kick();
 });
 
 async function deletePhoto(id){
   const p=photos[id]; if(!p) return;
+  state.photoDel=state.photoDel||{}; state.photoDel[id]={key:p.key,done:false};
   if(p.url) URL.revokeObjectURL(p.url);
   delete photos[id];
   if(idbOK){ try{ await idbDel('photos',id); }catch(e){} }
   renderPhotoStrip(p.key);
   refreshEqStatus(p.key);
+  scheduleSave();
+  if(window.Sync && window.Sync.kick) window.Sync.kick();
 }
 
 /* ====================== VIEWER PHOTO ====================== */
@@ -444,7 +460,7 @@ function renderHome(){
       '<div class="chev">'+IC.chev+'</div></div>';
   });
   $('app').innerHTML=html;
-  $('audIn').addEventListener('input',function(){state.meta.auditeur=this.value;scheduleSave();});
+  $('audIn').addEventListener('input',function(){state.meta.auditeur=this.value;touch('meta');});
   document.querySelectorAll('.zrow').forEach(r=>{
     r.onclick=()=>{view.zoneId=parseInt(r.dataset.z);nav('zone');};
   });
@@ -486,7 +502,7 @@ function renderZone(){
   $('app').innerHTML=html;
 
   document.querySelectorAll('[data-zf]').forEach(inp=>{
-    inp.addEventListener('input',function(){zf[this.dataset.zf]=this.value;scheduleSave();});
+    inp.addEventListener('input',function(){zf[this.dataset.zf]=this.value;touch('zone:'+z.id);});
   });
   document.querySelectorAll('.chip').forEach(ch=>{
     ch.onclick=()=>{zoneFilter=ch.dataset.f;renderZone();};
@@ -605,7 +621,7 @@ function bindEqCards(z){
         const s=btn.dataset.s;const cur=(state.equip[key]||{}).statut||'';
         fd(key).statut = (cur===s)?'':s;
         card.querySelectorAll('.seg button').forEach(b2=>b2.classList.toggle('on',b2.dataset.s===fd(key).statut));
-        refreshEqStatus(key);scheduleSave();
+        refreshEqStatus(key);touch('equip:'+key);
       };
     });
     // text fields
@@ -613,7 +629,7 @@ function bindEqCards(z){
       inp.addEventListener('input',function(){
         fd(key)[this.dataset.ef]=this.value;
         if(this.dataset.ef==='local') refreshEqStatus(key);
-        scheduleSave();
+        touch('equip:'+key);
       });
     });
     // custom name
@@ -623,7 +639,7 @@ function bindEqCards(z){
         const arr=state.custom[zid]||[];const o=arr.find(x=>x.cid===cid);
         if(o){o.name=this.value;
           card.querySelector('.eqh-name').textContent='+ '+this.value;}
-        scheduleSave();
+        touch('custom:'+zid+':'+cid);
       });
     });
     // delete custom
@@ -696,9 +712,9 @@ function applyFilter(){
 /* ====================== ÉQUIPEMENTS PERSONNALISÉS ====================== */
 function addCustom(zoneId){
   if(!state.custom[zoneId]) state.custom[zoneId]=[];
-  const cid=(state.custom[zoneId].reduce((m,x)=>Math.max(m,x.cid),0))+1;
+  const cid=Date.now();
   state.custom[zoneId].push({cid:cid,name:'Nouvel équipement'});
-  scheduleSave();
+  touch('custom:'+zoneId+':'+cid);
   renderZone();
   setTimeout(()=>{
     const card=$('eq_z'+zoneId+'_c'+cid);
@@ -714,7 +730,8 @@ async function delCustom(zoneId,cid){
   for(const p of photosFor(key)){ await deletePhoto(p.id); }
   state.custom[zoneId]=(state.custom[zoneId]||[]).filter(x=>x.cid!==cid);
   delete state.equip[key];
-  scheduleSave();
+  state.customDel=state.customDel||{}; state.customDel[zoneId+':'+cid]=true;
+  touch('custom:'+zoneId+':'+cid);
   renderZone();
 }
 
@@ -1020,6 +1037,7 @@ $('restoreInput').addEventListener('change',async function(){
       photos[p.id]=rec;
     }
     await persistState();
+    if(window.Sync){ if(Sync.reset)Sync.reset(); if(Sync.cycle)Sync.cycle(); }
     toast('Sauvegarde restaurée');
     nav('home');
   }catch(e){ alert('Restauration impossible : '+e.message); }
@@ -1033,6 +1051,7 @@ async function doReset(){
   state={meta:{auditeur:''},zones:{},equip:{},custom:{}};
   if(idbOK){ try{await idbClear('photos');await idbDel('kv','state');}catch(e){} }
   try{localStorage.removeItem('wadra_state_v2');}catch(e){}
+  if(window.Sync){ if(Sync.reset)Sync.reset(); if(Sync.cycle)Sync.cycle(); }
   toast('Données réinitialisées');
   nav('home');
 }
@@ -1074,7 +1093,8 @@ async function boot(){
   nav('home');
 }
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-boot();
+boot().then(function(){ window.__APP_READY=true; if(window.Sync && window.Sync.start) window.Sync.start(); });
 </script>
+<script src="./sync.js"></script>
 </body>
 </html>
