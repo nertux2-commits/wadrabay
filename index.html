@@ -197,6 +197,7 @@ hr.sep{border:none;border-top:1px solid #eef1f2;margin:12px 0}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./data.js"></script>
+<script src="./data_z0.js"></script>
 <script src="./data_z1.js"></script>
 <script src="./data_z2.js"></script>
 <script src="./data_z3.js"></script>
@@ -306,6 +307,7 @@ function zoneShortName(z){ return z.tab.replace(/^\d+-/,'').trim(); }
 function zoneEquip(z){
   const list=[];
   z.equipments.forEach((e,idx)=>{
+    if(e.src) return; // élément « source » déplacé vers la zone 0 — masqué ici (clés inchangées)
     list.push({key:'z'+z.id+'_b'+idx, isCustom:false, base:e, n:e.n||String(idx+1)});
   });
   (state.custom[z.id]||[]).forEach(c=>{

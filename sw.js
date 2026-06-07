@@ -1,11 +1,12 @@
 /* Service worker — Relevé Terrain WADRA Bay (grille v11 + synchro Supabase) */
-const CACHE = 'wadra-releve-v6';
+const CACHE = 'wadra-releve-v7';
 const ASSETS = [
   './',
   './index.html',
   './config.js',
   './sync.js',
   './data.js',
+  './data_z0.js',
   './data_z1.js',
   './data_z2.js',
   './data_z3.js',
