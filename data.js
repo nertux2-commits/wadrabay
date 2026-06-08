@@ -1,7 +1,7 @@
 // WADRA Bay — Hiérarchie complète : TD → Pièce → Équipement
 // Structure de base avec les TDs et pièces du fichier Excel
 
-export const zones = [
+const zones = [
   // TGBT — Poste HT-BT, Transfo, Groupe électrogène
   {
     id: "z_tgbt",
@@ -207,18 +207,19 @@ export const zones = [
 ];
 
 // Utility function to find a TD by ID
-export function findZone(zoneId) {
+function findZone(zoneId) {
   return zones.find(z => z.id === zoneId);
 }
 
 // Utility function to find a room by zone and room ID
-export function findRoom(zoneId, roomId) {
+function findRoom(zoneId, roomId) {
   const zone = findZone(zoneId);
   return zone ? zone.rooms.find(r => r.id === roomId) : null;
 }
 
 // Utility function to find equipment by zone, room, and equipment ID
-export function findEquipment(zoneId, roomId, equipId) {
+function findEquipment(zoneId, roomId, equipId) {
   const room = findRoom(zoneId, roomId);
   return room ? room.equipment.find(e => e.id === equipId) : null;
 }
+                            
