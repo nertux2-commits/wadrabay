@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Relevé WADRA">
+<meta name="theme-color" content="#0d7a6f">
+<title>Relevé Terrain — WADRA Bay (TD → Pièce → Équipement)</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#eef1f2;color:#1a2025;font-size:15px;line-height:1.4;
+  -webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+input,select,textarea,button{font-family:inherit;font-size:16px}
+button{cursor:pointer;border:none;background:none;color:inherit}
+.hidden{display:none!important}
+
+/* ---- Header ---- */
+header{position:sticky;top:0;z-index:50;background:#0d7a6f;color:#fff;
+  padding:calc(env(safe-area-inset-top) + 9px) 12px 9px;
+  display:flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+header .htitle{flex:1;font-weight:600;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+header button.hbtn{color:#fff;padding:6px 8px;border-radius:8px;font-size:14px;font-weight:500;
+  display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.14)}
+header button.hbtn:active{background:rgba(255,255,255,.28)}
+header svg{width:18px;height:18px;display:block}
+
+main{padding:12px 12px calc(env(safe-area-inset-bottom) + 20px);max-width:760px;margin:0 auto}
+
+/* ---- Generic ---- */
+.panel{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;
+  box-shadow:0 1px 3px rgba(20,30,40,.07)}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin-bottom:9px;font-weight:700}
+.muted{color:#6b7785}
+.small{font-size:13px}
+.tiny{font-size:12px}
+
+/* ---- Lists ---- */
+.row-item{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;
+  border-radius:12px;margin-bottom:9px;box-shadow:0 1px 3px rgba(20,30,40,.06)}
+.row-item:active{background:#f4f6f6}
+.row-icon{flex:none;width:34px;height:34px;border-radius:9px;background:#0d7a6f;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.row-body{flex:1;min-width:0}
+.row-title{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-desc{font-size:12px;color:#6b7785;margin-top:1px}
+.row-chev{flex:none;color:#b3bcc4}
+.row-chev svg{width:20px;height:20px;display:block}
+
+/* ---- Buttons ---- */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  padding:13px;border-radius:11px;font-weight:600;font-size:15px}
+.btn.primary{background:#0d7a6f;color:#fff}
+.btn.primary:active{background:#0a5d54}
+.btn.sec{background:#eef1f2;color:#1a2025;border:1.4px solid #d6dbde}
+.btn.sec:active{background:#e2e6e9}
+.btn + .btn{margin-top:9px}
+.btn svg{width:19px;height:19px}
+
+/* ---- Fields ---- */
+label.fld{display:block;margin-bottom:10px}
+label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;margin-bottom:3px}
+.fld input,.fld textarea,.fld select{width:100%;border:1.4px solid #d6dbde;border-radius:9px;
+  padding:9px 10px;background:#fafbfb;color:#1a2025}
+.fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:#0d7a6f;background:#fff}
+.fld textarea{min-height:62px;resize:vertical}
+.row2{display:flex;gap:9px}
+.row2 > *{flex:1}
+
+/* ---- Photos ---- */
+.photos{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 3px}
+.thumb{position:relative;width:74px;height:74px;border-radius:9px;overflow:hidden;background:#eef1f2;
+  border:1px solid #dde1e3}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.addphoto{width:74px;height:74px;border-radius:9px;border:1.8px dashed #b6c0c6;background:#fafbfb;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#0d7a6f}
+.addphoto svg{width:22px;height:22px}
+.addphoto span{font-size:10.5px;font-weight:700}
+
+/* ---- Photo viewer ---- */
+.viewer{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.94);display:flex;flex-direction:column}
+.viewer .vtop{display:flex;justify-content:flex-end;padding:calc(env(safe-area-inset-top) + 10px) 14px 6px}
+.viewer .vtop button{color:#fff;font-size:15px;font-weight:600;padding:8px 14px;background:rgba(255,255,255,.16);border-radius:9px}
+.viewer .vimg{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;overflow:auto}
+.viewer .vimg img{max-width:100%;max-height:100%;border-radius:6px}
+.viewer .vbot{padding:12px 14px calc(env(safe-area-inset-bottom) + 14px)}
+.viewer .vbot button{width:100%;padding:13px;border-radius:11px;background:#c0392b;color:#fff;font-weight:700;font-size:15px}
+
+/* ---- Toast ---- */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 24px);
+  background:#1a2025;color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;font-weight:500;
+  z-index:300;opacity:0;transition:opacity .25s;pointer-events:none;max-width:88%;text-align:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.toast.show{opacity:1}
+
+/* ---- Progress ---- */
+.bar{height:8px;border-radius:6px;background:#e2e6e9;overflow:hidden;margin-top:6px}
+.bar > i{display:block;height:100%;background:#0d7a6f;border-radius:6px;transition:width .25s}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:7px;font-size:11.5px;font-weight:700;
+  letter-spacing:.02em;margin:4px 0}
+.badge.auto{background:#fdecd2;color:#9a6516}
+.badge.added{background:#e7eef6;color:#2f5d92}
+
+.consigne{background:#fff7e8;border:1px solid #f0dcb0;border-radius:9px;padding:8px 10px;
+  margin:9px 0;font-size:12.8px;color:#7a5a14}
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<main id="app"></main>
+
+<input type="file" id="camInput" accept="image/*" multiple hidden>
+<input type="file" id="restoreInput" accept=".json,application/json" hidden>
+
+<div class="viewer hidden" id="viewer">
+  <div class="vtop"><button id="vClose">Fermer</button></div>
+  <div class="vimg"><img id="vImg" alt=""></div>
+  <div class="vbot"><button id="vDel">Supprimer cette photo</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="./data.js"></script>
+<script src="./config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+"use strict";
+
+// DEBUG: Afficher les erreurs directement sur la page
+window.addEventListener('error', (e) => {
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;font-size:12px;z-index:9999;overflow:auto;max-height:200px';
+  msg.textContent = '❌ ERREUR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')';
+  document.body.appendChild(msg);
+  console.error('ERROR:', e);
+});
+
+// DEBUG: Check si data.js est chargé
+setTimeout(() => {
+  if(typeof zones === 'undefined') {
+    const msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;top:0;left:0;right:0;background:orange;color:white;padding:10px;font-size:12px;z-index:9999';
+    msg.textContent = '⚠️ data.js non chargé: zones is undefined';
+    document.body.appendChild(msg);
+    console.error('zones is undefined - data.js failed to load');
+  }
+}, 100);
+
+/* ====================== ICÔNES ====================== */
+const IC = {
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  exp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>'
+};
+
+/* ====================== ÉTAT ====================== */
+let DB = null, idbOK = false;
+let state = { meta: {auditeur:''}, tds: {}, equip: {}, rooms: {} };
+let photos = {};
+let view = {name: 'home', tdId: null, roomId: null};
+let saveTimer = null;
+let viewerCurrent = null;
+
+/* ====================== INDEXEDDB ====================== */
+function idbOpen(){return new Promise((res)=>{
+  let r;
+  try{ r = indexedDB.open('wadra_v3', 1); }catch(e){ return res(false); }
+  r.onupgradeneeded = e => {
+    const db = e.target.result;
+    if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+    if(!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', {keyPath:'id'});
+  };
+  r.onsuccess = e => {DB = e.target.result; res(true);};
+  r.onerror = () => res(false);
+});}
+
+async function idbPut(store, val, key){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readwrite');
+    store === 'kv' ? t.objectStore(store).put(val, key) : t.objectStore(store).put(val);
+    t.oncomplete = () => res();
+    t.onerror = () => rej(t.error);
+  });
+}
+
+async function idbGet(store, key){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readonly');
+    const rq = t.objectStore(store).get(key);
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+
+async function idbDel(store, key){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readwrite');
+    t.objectStore(store).delete(key);
+    t.oncomplete = () => res();
+    t.onerror = () => rej(t.error);
+  });
+}
+
+async function idbAll(store){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readonly');
+    const rq = t.objectStore(store).getAll();
+    rq.onsuccess = () => res(rq.result || []);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+
+/* ====================== SAUVEGARDE ====================== */
+function scheduleSave(){
+  state.meta.updated = new Date().toISOString();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistState, 500);
+}
+
+async function persistState(){
+  try {
+    if(idbOK) await idbPut('kv', JSON.parse(JSON.stringify(state)), 'state');
+    else localStorage.setItem('wadra_state_v3', JSON.stringify(state));
+  } catch(e) {
+    try { localStorage.setItem('wadra_state_v3', JSON.stringify(state)); } catch(_) {}
+  }
+}
+
+function touch(id){
+  state.dirty = state.dirty || {};
+  state.dirty[id] = 1;
+  scheduleSave();
+}
+
+/* ====================== HELPERS ====================== */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function findZone(zoneId){ return zones.find(z => z.id === zoneId); }
+function findRoom(zoneId, roomId){
+  const z = findZone(zoneId);
+  if(!z) return null;
+  return z.rooms.find(r => r.id === roomId);
+}
+
+function photosFor(key){ return Object.values(photos).filter(p => p.key === key); }
+
+/* ====================== PHOTOS ====================== */
+let photoTargetKey = null, photoTargetPlate = false;
+
+async function shrink(file){
+  const MAX = 1600, Q = 0.72;
+  let bmp = null;
+  try { bmp = await createImageBitmap(file, {imageOrientation:'from-image'}); }
+  catch(e) { try { bmp = await createImageBitmap(file); } catch(_) { bmp = null; } }
+
+  if(bmp){
+    let w = bmp.width, h = bmp.height;
+    if(Math.max(w,h) > MAX){
+      const s = MAX / Math.max(w,h);
+      w = Math.round(w * s);
+      h = Math.round(h * s);
+    }
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    return await new Promise(r => c.toBlob(b => r(b || file), 'image/jpeg', Q));
+  }
+  return file;
+}
+
+function triggerPhoto(key, plate){
+  photoTargetKey = key;
+  photoTargetPlate = !!plate;
+  $('camInput').click();
+}
+
+$('camInput').addEventListener('change', async function(){
+  const files = [...this.files];
+  this.value = '';
+  if(!files.length || !photoTargetKey) return;
+  toast('Traitement ' + files.length + ' photo(s)…');
+
+  for(const f of files){
+    try {
+      const blob = await shrink(f);
+      const id = 'p' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      const rec = {id, key: photoTargetKey, blob, plate: photoTargetPlate, synced: false};
+      if(idbOK) await idbPut('photos', rec);
+      rec.url = URL.createObjectURL(blob);
+      photos[id] = rec;
+    } catch(e) { toast('Erreur photo'); }
+  }
+
+  renderPhotoStrip(photoTargetKey);
+  toast('Photo(s) enregistrée(s)');
+  touch('photo');
+});
+
+async function deletePhoto(id){
+  const p = photos[id];
+  if(!p) return;
+  if(p.url) URL.revokeObjectURL(p.url);
+  delete photos[id];
+  if(idbOK) try { await idbDel('photos', id); } catch(e) {}
+  renderPhotoStrip(p.key);
+  scheduleSave();
+}
+
+/* ====================== PHOTO VIEWER ====================== */
+function openViewer(id){
+  const p = photos[id];
+  if(!p) return;
+  viewerCurrent = id;
+  $('vImg').src = p.url;
+  $('viewer').classList.remove('hidden');
+}
+
+$('vClose').onclick = () => {
+  $('viewer').classList.add('hidden');
+  $('vImg').src = '';
+  viewerCurrent = null;
+};
+
+$('vDel').onclick = async () => {
+  if(viewerCurrent && confirm('Supprimer cette photo ?')){
+    await deletePhoto(viewerCurrent);
+    $('viewer').classList.add('hidden');
+    $('vImg').src = '';
+    viewerCurrent = null;
+  }
+};
+
+/* ====================== RENDU : EN-TÊTE ====================== */
+function renderHeader(){
+  const h = $('hdr');
+
+  if(view.name === 'home'){
+    h.innerHTML = '<div class="htitle">Relevé Terrain — WADRA Bay</div>';
+  } else if(view.name === 'td'){
+    const z = findZone(view.tdId);
+    h.innerHTML = '<button class="hbtn" id="goHome">' + IC.back + '</button>' +
+      '<div class="htitle">' + esc(z.name) + '</div>';
+    $('goHome').onclick = () => nav('home');
+  } else if(view.name === 'room'){
+    const z = findZone(view.tdId);
+    const r = findRoom(view.tdId, view.roomId);
+    h.innerHTML = '<button class="hbtn" id="goTD">' + IC.back + '</button>' +
+      '<div class="htitle">' + esc(r.name) + '</div>';
+    $('goTD').onclick = () => {view.roomId = null; nav('td');};
+  } else if(view.name === 'equip'){
+    const z = findZone(view.tdId);
+    const r = findRoom(view.tdId, view.roomId);
+    const e = r.equipment.find(eq => eq.id === view.equipId);
+    h.innerHTML = '<button class="hbtn" id="goRoom">' + IC.back + '</button>' +
+      '<div class="htitle">' + esc(e.name) + '</div>';
+    $('goRoom').onclick = () => {view.equipId = null; nav('room');};
+  }
+}
+
+/* ====================== RENDU : ACCUEIL ====================== */
+function renderHome(){
+  const g = globalCounts();
+  const pct = g.total ? Math.round(g.done / g.total * 100) : 0;
+
+  let html = '<div class="panel">' +
+    '<label class="fld" style="margin:0"><span>Auditeur(s)</span>' +
+    '<input id="audIn" type="text" placeholder="Votre nom" value="' + esc(state.meta.auditeur || '') + '"></label>' +
+    '<hr style="border:none;border-top:1px solid #eef1f2;margin:12px 0">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+    '<b style="font-size:15px">Avancement global</b>' +
+    '<span class="small muted">' + g.done + ' / ' + g.total + ' équipements</span></div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="tiny muted" style="margin-top:6px">' + pct + '% traités · ' + g.photoN + ' photo(s)' +
+    (state.meta.updated ? ' · enreg. ' + new Date(state.meta.updated).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '') +
+    '</div></div>';
+
+  html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Tableaux Divisionnaires</h2>';
+
+  zones.forEach(z => {
+    const c = countsTD(z);
+    const zp = c.total ? Math.round(c.done / c.total * 100) : 0;
+    html += '<div class="row-item" data-z="' + z.id + '">' +
+      '<div class="row-icon">' + z.name.slice(0,2).toUpperCase() + '</div>' +
+      '<div class="row-body">' +
+      '<div class="row-title">' + esc(z.name) + '</div>' +
+      '<div class="row-desc">' + c.total + ' équipements · ' + zp + '%</div>' +
+      '</div>' +
+      '<div class="row-chev">' + IC.chev + '</div></div>';
+  });
+
+  $('app').innerHTML = html;
+  $('audIn').addEventListener('input', function(){ state.meta.auditeur = this.value; touch('meta'); });
+  document.querySelectorAll('.row-item').forEach(r => {
+    r.onclick = () => { view.tdId = r.dataset.z; nav('td'); };
+  });
+}
+
+function countsTD(z){
+  let total = 0, done = 0;
+  z.rooms.forEach(r => {
+    r.equipment.forEach(e => {
+      total++;
+      if((state.equip[e.id] || {}).statut) done++;
+    });
+  });
+  return {total, done};
+}
+
+function globalCounts(){
+  let total = 0, done = 0, photoN = Object.keys(photos).length;
+  zones.forEach(z => {
+    const c = countsTD(z);
+    total += c.total;
+    done += c.done;
+  });
+  return {total, done, photoN};
+}
+
+/* ====================== RENDU : TD (Pièces) ====================== */
+function renderTD(){
+  const z = findZone(view.tdId);
+  const c = countsTD(z);
+  const zp = c.total ? Math.round(c.done / c.total * 100) : 0;
+
+  let html = '<div class="panel">' +
+    '<h2>' + esc(z.name) + '</h2>' +
+    '<div style="font-weight:700;font-size:15px;margin-bottom:4px">' + esc(z.fullName) + '</div>' +
+    '<div class="tiny muted">' + (z.kVA || '') + '</div>' +
+    '<hr style="border:none;border-top:1px solid #eef1f2;margin:9px 0">' +
+    '<div style="display:flex;justify-content:space-between"><span class="small">Avancement</span>' + c.done + '/' + c.total + '</div>' +
+    '<div class="bar"><i style="width:' + zp + '%"></i></div>' +
+    '</div>';
+
+  html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Pièces</h2>';
+
+  z.rooms.forEach(r => {
+    const rc = r.equipment.length;
+    const rd = r.equipment.filter(e => (state.equip[e.id] || {}).statut).length;
+    html += '<div class="row-item" data-r="' + r.id + '">' +
+      '<div class="row-icon">📍</div>' +
+      '<div class="row-body">' +
+      '<div class="row-title">' + esc(r.name) + '</div>' +
+      '<div class="row-desc">' + rc + ' équipements · ' + rd + ' traités</div>' +
+      '</div>' +
+      '<div class="row-chev">' + IC.chev + '</div></div>';
+  });
+
+  html += '<button class="btn sec" id="addRoom" style="margin-top:9px">' + IC.plus + ' Ajouter une pièce</button>';
+
+  $('app').innerHTML = html;
+
+  document.querySelectorAll('.row-item').forEach(r => {
+    r.onclick = () => { view.roomId = r.dataset.r; nav('room'); };
+  });
+
+  $('addRoom').onclick = () => {
+    const roomId = 'room_' + Date.now();
+    const name = prompt('Nom de la pièce :');
+    if(!name) return;
+    state.rooms[roomId] = {id: roomId, name: name, equipment: []};
+    const z = findZone(view.tdId);
+    z.rooms.push({id: roomId, name: name, equipment: []});
+    touch('room:' + roomId);
+    renderTD();
+  };
+}
+
+/* ====================== RENDU : PIÈCE (Équipements) ====================== */
+function renderRoom(){
+  const z = findZone(view.tdId);
+  const r = findRoom(view.tdId, view.roomId);
+
+  let html = '<div class="panel">' +
+    '<h2>' + esc(r.name) + '</h2>' +
+    '<div class="tiny muted">' + z.name + '</div>' +
+    '</div>';
+
+  html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Équipements</h2>';
+
+  r.equipment.forEach(e => {
+    const f = state.equip[e.id] || {};
+    const st = f.statut || '';
+    const ph = photosFor(e.id);
+    html += '<div class="row-item" data-e="' + e.id + '" style="border-left:5px solid #' + (st === 'ok' ? '1a9d5a' : 'c3cad0') + '">' +
+      '<div class="row-icon">' + (st === 'ok' ? '✓' : '⚡') + '</div>' +
+      '<div class="row-body">' +
+      '<div class="row-title">' + esc(e.name) + '</div>' +
+      '<div class="row-desc">' + (f.local || 'Local non spécifié') + ' · ' + ph.length + ' photo(s)</div>' +
+      '</div>' +
+      '<div class="row-chev">' + IC.chev + '</div></div>';
+  });
+
+  html += '<button class="btn sec" id="addEquip" style="margin-top:9px">' + IC.plus + ' Ajouter un équipement</button>';
+
+  $('app').innerHTML = html;
+
+  document.querySelectorAll('.row-item').forEach(row => {
+    row.onclick = () => { view.equipId = row.dataset.e; nav('equip'); };
+  });
+
+  $('addEquip').onclick = () => {
+    const equipId = 'equip_' + Date.now();
+    const name = prompt('Nom de l\'équipement :');
+    if(!name) return;
+    const e = {id: equipId, name: name};
+    r.equipment.push(e);
+    state.equip[equipId] = {};
+    touch('equip:' + equipId);
+    renderRoom();
+  };
+}
+
+/* ====================== RENDU : ÉQUIPEMENT ====================== */
+function renderEquip(){
+  const z = findZone(view.tdId);
+  const r = findRoom(view.tdId, view.roomId);
+  const e = r.equipment.find(eq => eq.id === view.equipId);
+  const f = state.equip[e.id] || {};
+  const ph = photosFor(e.id);
+
+  let html = '<div class="panel">' +
+    '<h2>' + esc(r.name) + ' · ' + esc(z.name) + '</h2>' +
+    '<div class="row2">' +
+    '<label class="fld"><span>Statut</span>' +
+    '<select id="statSelect"><option value="">À faire</option>' +
+    '<option value="ok" ' + (f.statut === 'ok' ? 'selected' : '') + '>Relevé OK</option>' +
+    '<option value="absent" ' + (f.statut === 'absent' ? 'selected' : '') + '>Non trouvé</option>' +
+    '<option value="na" ' + (f.statut === 'na' ? 'selected' : '') + '>Sans objet</option>' +
+    '</select></label>' +
+    '<label class="fld"><span>Local précis</span>' +
+    '<input type="text" id="localInput" placeholder="Où cet équipement ?" value="' + esc(f.local || '') + '"></label>' +
+    '</div>' +
+    '<div class="row2">' +
+    '<label class="fld"><span>Marque</span>' +
+    '<input type="text" id="marqueInput" value="' + esc(f.marque || '') + '"></label>' +
+    '<label class="fld"><span>Modèle</span>' +
+    '<input type="text" id="modeleInput" value="' + esc(f.modele || '') + '"></label>' +
+    '</div>' +
+    '<label class="fld"><span>Puissance (kW)</span>' +
+    '<input type="text" id="puissanceInput" placeholder="ex. 2.2" value="' + esc(f.puissance || '') + '"' +
+    (f.pwAuto ? ' style="border-color:#e0892a;background:#fff8ee"' : '') + '></label>';
+
+  if(f.pwAuto){
+    html += '<div class="tiny muted">⚡ Calculé automatiquement depuis la plaque</div>' +
+      '<button class="btn sec" id="validerPW" style="margin:6px 0 12px;padding:9px">Valider</button>';
+  }
+
+  html += '<label class="fld"><span>Observations</span>' +
+    '<textarea id="obsInput" placeholder="État, remarques…">' + esc(f.observations || '') + '</textarea></label>' +
+    '</div>';
+
+  html += '<div class="panel">' +
+    '<h2>Plaque signalétique</h2>' +
+    '<div class="photos" id="ph_plate"></div>' +
+    '<button class="btn sec" id="addPlatePhoto" style="margin-top:9px">⚡ Photographier la plaque</button>' +
+    '</div>';
+
+  html += '<div class="panel">' +
+    '<h2>Photos équipement</h2>' +
+    '<div class="photos" id="ph_equip"></div>' +
+    '<button class="btn sec" id="addEquipPhoto" style="margin-top:9px">' + IC.cam + ' Ajouter une photo</button>' +
+    '</div>';
+
+  $('app').innerHTML = html;
+
+  // Rendus photos
+  renderStripKind(e.id, true);   // Plaque
+  renderStripKind(e.id, false);  // Équipement
+
+  // Event listeners
+  $('statSelect').addEventListener('change', function(){
+    state.equip[e.id].statut = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('localInput').addEventListener('input', function(){
+    state.equip[e.id].local = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('marqueInput').addEventListener('input', function(){
+    state.equip[e.id].marque = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('modeleInput').addEventListener('input', function(){
+    state.equip[e.id].modele = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('puissanceInput').addEventListener('input', function(){
+    state.equip[e.id].puissance = this.value;
+    state.equip[e.id].pwAuto = false;
+    touch('equip:' + e.id);
+  });
+
+  $('obsInput').addEventListener('input', function(){
+    state.equip[e.id].observations = this.value;
+    touch('equip:' + e.id);
+  });
+
+  if($('validerPW')){
+    $('validerPW').onclick = () => {
+      state.equip[e.id].pwAuto = false;
+      touch('equip:' + e.id);
+      renderEquip();
+    };
+  }
+
+  $('addPlatePhoto').onclick = () => triggerPhoto(e.id, true);
+  $('addEquipPhoto').onclick = () => triggerPhoto(e.id, false);
+}
+
+function renderStripKind(equipId, plate){
+  const box = $(plate ? 'ph_plate' : 'ph_equip');
+  if(!box) return;
+  const ph = photosFor(equipId).filter(p => (!!p.plate) === plate);
+  let h = '';
+  ph.forEach(p => {
+    h += '<div class="thumb" data-pid="' + p.id + '"><img src="' + p.url + '" alt=""></div>';
+  });
+  h += '<button class="addphoto">' + (plate ? '⚡' : IC.cam) + '<span>' + (plate ? 'PLAQ' : 'AJOUT') + '</span></button>';
+  box.innerHTML = h;
+  box.querySelectorAll('.thumb').forEach(t => {
+    t.onclick = () => openViewer(t.dataset.pid);
+  });
+}
+
+/* ====================== NAVIGATION ====================== */
+function nav(name){
+  view.name = name;
+  window.scrollTo(0, 0);
+  renderHeader();
+  if(name === 'home') renderHome();
+  else if(name === 'td') renderTD();
+  else if(name === 'room') renderRoom();
+  else if(name === 'equip') renderEquip();
+}
+
+/* ====================== DÉMARRAGE ====================== */
+async function boot(){
+  idbOK = await idbOpen();
+
+  // Charger état
+  try {
+    let s = null;
+    if(idbOK) s = await idbGet('kv', 'state');
+    if(!s) {
+      const ls = localStorage.getItem('wadra_state_v3');
+      if(ls) s = JSON.parse(ls);
+    }
+    if(s){
+      state = s;
+      state.meta = state.meta || {auditeur:''};
+      state.tds = state.tds || {};
+      state.equip = state.equip || {};
+      state.rooms = state.rooms || {};
+    }
+  } catch(e) {}
+
+  // Charger photos
+  if(idbOK){
+    try {
+      const arr = await idbAll('photos');
+      arr.forEach(p => { p.url = URL.createObjectURL(p.blob); photos[p.id] = p; });
+    } catch(e) {}
+  }
+
+  nav('home');
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+boot().then(() => { window.__APP_READY = true; });
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           

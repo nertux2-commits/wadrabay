@@ -1,6 +1,6 @@
 /* WADRA Bay v11 — Départ 10 : 10-POMPERIE générale | 20,4 kVA | NDC CANECO folio 16 */
 BASE.zones.push({
-  "id": 10, "tab": "10-POMPERIE générale | 20,4 kVA | NDC CANECO folio 16", "title": "DÉPART 10/10 : POMPERIE générale", "ref": "POMPERIE générale | 20,4 kVA | NDC CANECO folio 16",
+  "id": 10, "tab": "10-POMPERIE générale", "title": "DÉPART 10/10 : POMPERIE générale", "ref": "POMPERIE générale | 20,4 kVA | NDC CANECO folio 16",
   "equipments": [
     {"n": "1", "aRelever": "OUI", "equipement": "Pompe eau potable n°1", "qte": "1", "local": "Pomperie", "ref": "NDC folio 16", "notice": "✗", "aVerifier": "Relever plaque"},
     {"n": "2", "aRelever": "OUI", "equipement": "Pompe eau potable n°2", "qte": "1", "local": "Pomperie", "ref": "NDC folio 16", "notice": "✗", "aVerifier": "Relever plaque"},
