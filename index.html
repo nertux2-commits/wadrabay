@@ -128,6 +128,7 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./data.js"></script>
 <script src="./config.js"></script>
+<script src="./seed_z03.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
@@ -537,6 +538,11 @@ function renderEquip(){
 
   let html = '<div class="panel">' +
     '<h2>' + esc(r.name) + ' · ' + esc(z.name) + '</h2>' +
+    ((e.aVerifier || e.ref) ?
+      '<div class="consigne">' +
+      (e.aVerifier ? '📋 ' + esc(e.aVerifier) : '') +
+      (e.ref ? '<div class="tiny" style="margin-top:4px;opacity:.85">Réf. : ' + esc(e.ref) + '</div>' : '') +
+      '</div>' : '') +
     '<div class="row2">' +
     '<label class="fld"><span>Statut</span>' +
     '<select id="statSelect"><option value="">À faire</option>' +
@@ -654,4 +660,101 @@ function nav(name){
   else if(name === 'equip') renderEquip();
 }
 
-/* ====================== DÉMARRAGE
+/* ====================== GRAINE (SEED) MISSION 1 ====================== */
+async function seedMission1(){
+  const SEED = window.WADRA_SEED;
+  if(!SEED) return;
+  state.meta = state.meta || {};
+  state.ts = state.ts || {};
+  state.dirty = state.dirty || {};
+  let nEq = 0, nPh = 0;
+
+  // 1) Données saisies terrain — une seule fois, sans JAMAIS écraser une saisie existante
+  if(state.meta.seedVersion !== SEED.version){
+    for(const id in SEED.equip){
+      const cur = state.equip[id];
+      const empty = !cur || Object.keys(cur).length === 0;
+      if(empty){
+        state.equip[id] = Object.assign({}, SEED.equip[id]);
+        state.ts['equip:' + id] = SEED.date;   // horodatage stable (date de mission)
+        state.dirty['equip:' + id] = 1;         // à pousser vers la base partagée
+        nEq++;
+      }
+    }
+    state.meta.seedVersion = SEED.version;
+  }
+
+  // 2) Photos terrain — auto-réparant : charge à chaque ouverture celles qui manquent
+  //    (permet de récupérer les photos même si elles sont déployées après le code)
+  for(const ph of SEED.photos){
+    const pid = ph.id;
+    if(photos[pid]) continue;
+    if((state.photoDel || {})[pid]) continue;
+    try {
+      const resp = await fetch(ph.src);
+      if(!resp || !resp.ok) continue;
+      const blob = await resp.blob();
+      const rec = {id: pid, key: ph.key, zoneId: SEED.zone, blob: blob, plate: !!ph.plate, synced: false};
+      if(idbOK){ try { await idbPut('photos', rec); } catch(e){} }
+      rec.url = URL.createObjectURL(blob);
+      photos[pid] = rec;
+      nPh++;
+    } catch(e) {}
+  }
+
+  if(nEq || nPh){ await persistState(); toast('Mission 1 : ' + nEq + ' équip. · ' + nPh + ' photo(s)'); }
+}
+
+/* ====================== DÉMARRAGE ====================== */
+async function boot(){
+  idbOK = await idbOpen();
+
+  // Charger état
+  try {
+    let s = null;
+    if(idbOK) s = await idbGet('kv', 'state');
+    if(!s) {
+      const ls = localStorage.getItem('wadra_state_v3');
+      if(ls) s = JSON.parse(ls);
+    }
+    if(s){
+      state = s;
+      state.meta = state.meta || {auditeur:''};
+      state.tds = state.tds || {};
+      state.equip = state.equip || {};
+      state.rooms = state.rooms || {};
+    }
+  } catch(e) {}
+
+  // Champs nécessaires à la synchro partagée (évite tout plantage de sync.js)
+  state.zones = state.zones || {};
+  state.custom = state.custom || {};
+
+  // Charger photos
+  if(idbOK){
+    try {
+      const arr = await idbAll('photos');
+      arr.forEach(p => { p.url = URL.createObjectURL(p.blob); photos[p.id] = p; });
+    } catch(e) {}
+  }
+
+  // Pré-remplissage des données de la 1re mission (une seule fois)
+  try { await seedMission1(); } catch(e) {}
+
+  nav('home');
+
+  // Démarrage de la synchronisation Supabase (base partagée)
+  if(window.Sync && window.Sync.start){ try { window.Sync.start(); } catch(e) {} }
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+boot().then(() => { window.__APP_READY = true; });
+</script>
+<script src="./sync.js"></script>
+</body>
+</html>

@@ -35,6 +35,8 @@
     state.dirty = state.dirty || {};      // id d'entrée en attente d'envoi
     state.customDel = state.customDel || {}; // "zone:cid" -> "done" | true (tombstones équip. ajoutés)
     state.photoDel = state.photoDel || {};   // photoId -> {key, done}
+    state.zones = state.zones || {};      // entrées "zone:" reçues de la base partagée
+    state.custom = state.custom || {};    // équipements ajoutés sur le terrain (par zone)
     state.sync = state.sync || {};
     if (!state.sync.device) state.sync.device = "dev_" + Math.random().toString(36).slice(2, 9);
     state.sync.entriesPull = state.sync.entriesPull || "1970-01-01T00:00:00Z";
