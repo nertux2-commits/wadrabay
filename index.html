@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Relevé WADRA">
 <meta name="theme-color" content="#0d7a6f">
-<title>Relevé Terrain — WADRA Bay</title>
+<title>Relevé Terrain — WADRA Bay (TD → Pièce → Équipement)</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html,body{height:100%}
@@ -29,9 +29,9 @@ header button.hbtn{color:#fff;padding:6px 8px;border-radius:8px;font-size:14px;f
 header button.hbtn:active{background:rgba(255,255,255,.28)}
 header svg{width:18px;height:18px;display:block}
 
-main{padding:12px 12px calc(env(safe-area-inset-bottom) + 90px);max-width:760px;margin:0 auto}
+main{padding:12px 12px calc(env(safe-area-inset-bottom) + 20px);max-width:760px;margin:0 auto}
 
-/* ---- Generic card ---- */
+/* ---- Generic ---- */
 .panel{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;
   box-shadow:0 1px 3px rgba(20,30,40,.07)}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin-bottom:9px;font-weight:700}
@@ -39,11 +39,27 @@ main{padding:12px 12px calc(env(safe-area-inset-bottom) + 90px);max-width:760px;
 .small{font-size:13px}
 .tiny{font-size:12px}
 
-/* ---- Progress bar ---- */
-.bar{height:8px;border-radius:6px;background:#e2e6e9;overflow:hidden;margin-top:6px}
-.bar > i{display:block;height:100%;background:#0d7a6f;border-radius:6px;transition:width .25s}
-.barmini{height:5px;border-radius:4px;background:#e6e9eb;overflow:hidden;margin-top:5px}
-.barmini > i{display:block;height:100%;background:#1a9d5a;border-radius:4px}
+/* ---- Lists ---- */
+.row-item{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;
+  border-radius:12px;margin-bottom:9px;box-shadow:0 1px 3px rgba(20,30,40,.06)}
+.row-item:active{background:#f4f6f6}
+.row-icon{flex:none;width:34px;height:34px;border-radius:9px;background:#0d7a6f;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.row-body{flex:1;min-width:0}
+.row-title{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-desc{font-size:12px;color:#6b7785;margin-top:1px}
+.row-chev{flex:none;color:#b3bcc4}
+.row-chev svg{width:20px;height:20px;display:block}
+
+/* ---- Buttons ---- */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  padding:13px;border-radius:11px;font-weight:600;font-size:15px}
+.btn.primary{background:#0d7a6f;color:#fff}
+.btn.primary:active{background:#0a5d54}
+.btn.sec{background:#eef1f2;color:#1a2025;border:1.4px solid #d6dbde}
+.btn.sec:active{background:#e2e6e9}
+.btn + .btn{margin-top:9px}
+.btn svg{width:19px;height:19px}
 
 /* ---- Fields ---- */
 label.fld{display:block;margin-bottom:10px}
@@ -54,78 +70,6 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 .fld textarea{min-height:62px;resize:vertical}
 .row2{display:flex;gap:9px}
 .row2 > *{flex:1}
-
-/* ---- Buttons ---- */
-.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
-  padding:13px;border-radius:11px;font-weight:600;font-size:15px}
-.btn.primary{background:#0d7a6f;color:#fff}
-.btn.primary:active{background:#0a5d54}
-.btn.sec{background:#eef1f2;color:#1a2025;border:1.4px solid #d6dbde}
-.btn.sec:active{background:#e2e6e9}
-.btn.ghost{background:#fff;color:#0d7a6f;border:1.6px solid #0d7a6f}
-.btn.danger{background:#fff;color:#c0392b;border:1.5px solid #e3b4ad}
-.btn + .btn{margin-top:9px}
-.btn svg{width:19px;height:19px}
-
-/* ---- Zone list (home) ---- */
-.zrow{display:flex;align-items:center;gap:11px;padding:12px 13px;background:#fff;
-  border-radius:12px;margin-bottom:9px;box-shadow:0 1px 3px rgba(20,30,40,.06)}
-.zrow:active{background:#f4f6f6}
-.znum{flex:none;width:34px;height:34px;border-radius:9px;background:#0d7a6f;color:#fff;
-  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
-.zrow.done .znum{background:#1a9d5a}
-.zbody{flex:1;min-width:0}
-.zname{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.zmeta{font-size:12px;color:#6b7785;margin-top:1px}
-.chev{flex:none;color:#b3bcc4}
-.chev svg{width:20px;height:20px;display:block}
-
-/* ---- Filter chips ---- */
-.chips{display:flex;gap:7px;margin-bottom:11px;flex-wrap:wrap}
-.chip{padding:7px 12px;border-radius:20px;background:#fff;border:1.4px solid #d6dbde;
-  font-size:13px;font-weight:600;color:#55606b}
-.chip.on{background:#0d7a6f;color:#fff;border-color:#0d7a6f}
-
-/* ---- Equipment card ---- */
-.eq{background:#fff;border-radius:13px;margin-bottom:10px;overflow:hidden;
-  box-shadow:0 1px 3px rgba(20,30,40,.07);border-left:5px solid #c3cad0}
-.eq.s-ok{border-left-color:#1a9d5a}
-.eq.s-absent{border-left-color:#e0892a}
-.eq.s-na{border-left-color:#9aa5b1}
-.eqhead{display:flex;align-items:center;gap:10px;padding:11px 12px}
-.eqhead:active{background:#f6f7f8}
-.dot{flex:none;width:11px;height:11px;border-radius:50%;background:#c3cad0}
-.eq.s-ok .dot{background:#1a9d5a}.eq.s-absent .dot{background:#e0892a}.eq.s-na .dot{background:#9aa5b1}
-.eqh-body{flex:1;min-width:0}
-.eqh-name{font-weight:600;font-size:14.5px;line-height:1.3}
-.eqh-sub{font-size:12px;color:#6b7785;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eqh-right{flex:none;display:flex;align-items:center;gap:8px;color:#8a949c}
-.pcount{display:flex;align-items:center;gap:3px;font-size:12.5px;font-weight:600}
-.pcount svg{width:15px;height:15px}
-.eqhead .chev svg{transition:transform .2s}
-.eq.open .eqhead .chev svg{transform:rotate(90deg)}
-.eqbody{display:none;padding:0 12px 13px;border-top:1px solid #eef1f2}
-.eq.open .eqbody{display:block}
-
-.badge{display:inline-block;padding:3px 9px;border-radius:7px;font-size:11.5px;font-weight:700;
-  letter-spacing:.02em;margin:10px 0 4px}
-.badge.oui{background:#e3f4ea;color:#1a7d46}
-.badge.conf{background:#fdf0dc;color:#9a6516}
-.badge.add{background:#e7eef6;color:#2f5d92}
-
-.infobox{background:#f5f7f8;border-radius:9px;padding:9px 10px;margin:9px 0;font-size:12.5px;color:#55606b}
-.infobox b{color:#3a444d}
-.consigne{background:#fff7e8;border:1px solid #f0dcb0;border-radius:9px;padding:8px 10px;
-  margin:9px 0;font-size:12.8px;color:#7a5a14}
-.consigne b{color:#5e4408}
-
-/* ---- Status segmented ---- */
-.seg{display:flex;gap:6px;margin:4px 0 12px}
-.seg button{flex:1;padding:8px 4px;border-radius:9px;background:#f1f3f4;border:1.5px solid #e2e6e9;
-  font-size:12px;font-weight:600;color:#6b7785;line-height:1.25}
-.seg button.on[data-s="ok"]{background:#1a9d5a;border-color:#1a9d5a;color:#fff}
-.seg button.on[data-s="absent"]{background:#e0892a;border-color:#e0892a;color:#fff}
-.seg button.on[data-s="na"]{background:#8895a3;border-color:#8895a3;color:#fff}
 
 /* ---- Photos ---- */
 .photos{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 3px}
@@ -138,55 +82,40 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 .addphoto span{font-size:10.5px;font-weight:700}
 
 /* ---- Photo viewer ---- */
-.viewer{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.94);
-  display:flex;flex-direction:column}
+.viewer{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.94);display:flex;flex-direction:column}
 .viewer .vtop{display:flex;justify-content:flex-end;padding:calc(env(safe-area-inset-top) + 10px) 14px 6px}
-.viewer .vtop button{color:#fff;font-size:15px;font-weight:600;padding:8px 14px;
-  background:rgba(255,255,255,.16);border-radius:9px}
+.viewer .vtop button{color:#fff;font-size:15px;font-weight:600;padding:8px 14px;background:rgba(255,255,255,.16);border-radius:9px}
 .viewer .vimg{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;overflow:auto}
 .viewer .vimg img{max-width:100%;max-height:100%;border-radius:6px}
 .viewer .vbot{padding:12px 14px calc(env(safe-area-inset-bottom) + 14px)}
-.viewer .vbot button{width:100%;padding:13px;border-radius:11px;background:#c0392b;color:#fff;
-  font-weight:700;font-size:15px}
+.viewer .vbot button{width:100%;padding:13px;border-radius:11px;background:#c0392b;color:#fff;font-weight:700;font-size:15px}
 
 /* ---- Toast ---- */
-.toast{position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(env(safe-area-inset-bottom) + 24px);
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 24px);
   background:#1a2025;color:#fff;padding:11px 18px;border-radius:11px;font-size:14px;font-weight:500;
   z-index:300;opacity:0;transition:opacity .25s;pointer-events:none;max-width:88%;text-align:center;
   box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .toast.show{opacity:1}
 
-/* ---- Sticky bottom action ---- */
-.fab{position:fixed;left:0;right:0;bottom:0;z-index:40;
-  padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);
-  background:linear-gradient(to top,#eef1f2 72%,rgba(238,241,242,0));}
-.fab .btn{max-width:760px;margin:0 auto}
+/* ---- Progress ---- */
+.bar{height:8px;border-radius:6px;background:#e2e6e9;overflow:hidden;margin-top:6px}
+.bar > i{display:block;height:100%;background:#0d7a6f;border-radius:6px;transition:width .25s}
 
-.addeq{border:1.8px dashed #9fb6b2;color:#0d7a6f;background:#fff;border-radius:12px;
-  padding:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px}
-.addeq:active{background:#f1f6f5}
-.addeq svg{width:19px;height:19px}
+.badge{display:inline-block;padding:3px 9px;border-radius:7px;font-size:11.5px;font-weight:700;
+  letter-spacing:.02em;margin:4px 0}
+.badge.auto{background:#fdecd2;color:#9a6516}
+.badge.added{background:#e7eef6;color:#2f5d92}
 
-.banner{background:#fdecea;border:1px solid #f3b5ae;color:#9a342a;border-radius:10px;
-  padding:10px 12px;font-size:12.5px;margin-bottom:12px}
-.steps{font-size:13px;color:#55606b}
-.steps li{margin:5px 0 5px 18px}
-.kpi{display:flex;gap:9px;text-align:center}
-.kpi > div{flex:1;background:#f5f7f8;border-radius:10px;padding:9px 4px}
-.kpi .v{font-size:20px;font-weight:800;color:#0d7a6f}
-.kpi .l{font-size:11px;color:#6b7785;margin-top:1px}
-hr.sep{border:none;border-top:1px solid #eef1f2;margin:12px 0}
+.consigne{background:#fff7e8;border:1px solid #f0dcb0;border-radius:9px;padding:8px 10px;
+  margin:9px 0;font-size:12.8px;color:#7a5a14}
 </style>
 </head>
 <body>
 <header id="hdr"></header>
 <main id="app"></main>
-<div class="fab hidden" id="fab"></div>
 
 <input type="file" id="camInput" accept="image/*" multiple hidden>
 <input type="file" id="restoreInput" accept=".json,application/json" hidden>
-<input type="file" id="puissInput" accept=".json,application/json" hidden>
 
 <div class="viewer hidden" id="viewer">
   <div class="vtop"><button id="vClose">Fermer</button></div>
@@ -198,17 +127,6 @@ hr.sep{border:none;border-top:1px solid #eef1f2;margin:12px 0}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./data.js"></script>
-<script src="./data_z0.js"></script>
-<script src="./data_z1.js"></script>
-<script src="./data_z2.js"></script>
-<script src="./data_z3.js"></script>
-<script src="./data_z4.js"></script>
-<script src="./data_z5.js"></script>
-<script src="./data_z6.js"></script>
-<script src="./data_z7.js"></script>
-<script src="./data_z8.js"></script>
-<script src="./data_z9.js"></script>
-<script src="./data_z10.js"></script>
 <script src="./config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -219,949 +137,542 @@ const IC = {
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
   chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
   cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
-  exp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-  save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>'
+  exp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>'
 };
 
 /* ====================== ÉTAT ====================== */
-let DB=null, idbOK=false;
-let state = { meta:{auditeur:''}, zones:{}, equip:{}, custom:{} };
-let photos = {};          // id -> {id,key,zoneId,blob,url}
-let view = {name:'home', zoneId:null};
-let zoneFilter = 'all';
+let DB = null, idbOK = false;
+let state = { meta: {auditeur:''}, tds: {}, equip: {}, rooms: {} };
+let photos = {};
+let view = {name: 'home', tdId: null, roomId: null};
 let saveTimer = null;
 let viewerCurrent = null;
-
-const STAT = {
-  '':     {label:'À faire',  short:'À faire'},
-  'ok':   {label:'Relevé OK',short:'Relevé'},
-  'absent':{label:'Non trouvé',short:'Absent'},
-  'na':   {label:'Sans objet',short:'S/objet'}
-};
 
 /* ====================== INDEXEDDB ====================== */
 function idbOpen(){return new Promise((res)=>{
   let r;
-  try{ r=indexedDB.open('wadra_releve_v2',1); }catch(e){ return res(false); }
-  r.onupgradeneeded=e=>{const db=e.target.result;
+  try{ r = indexedDB.open('wadra_v3', 1); }catch(e){ return res(false); }
+  r.onupgradeneeded = e => {
+    const db = e.target.result;
     if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
-    if(!db.objectStoreNames.contains('photos')) db.createObjectStore('photos',{keyPath:'id'});
+    if(!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', {keyPath:'id'});
   };
-  r.onsuccess=e=>{DB=e.target.result;res(true);};
-  r.onerror=()=>res(false);
-  r.onblocked=()=>res(false);
+  r.onsuccess = e => {DB = e.target.result; res(true);};
+  r.onerror = () => res(false);
 });}
-function idbPut(store,val,key){return new Promise((res,rej)=>{
-  const t=DB.transaction(store,'readwrite');
-  store==='kv'?t.objectStore(store).put(val,key):t.objectStore(store).put(val);
-  t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
-function idbGet(store,key){return new Promise((res,rej)=>{
-  const t=DB.transaction(store,'readonly');const rq=t.objectStore(store).get(key);
-  rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
-function idbDel(store,key){return new Promise((res,rej)=>{
-  const t=DB.transaction(store,'readwrite');t.objectStore(store).delete(key);
-  t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
-function idbAll(store){return new Promise((res,rej)=>{
-  const t=DB.transaction(store,'readonly');const rq=t.objectStore(store).getAll();
-  rq.onsuccess=()=>res(rq.result||[]);rq.onerror=()=>rej(rq.error);});}
-function idbClear(store){return new Promise((res,rej)=>{
-  const t=DB.transaction(store,'readwrite');t.objectStore(store).clear();
-  t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
 
-/* ====================== SAUVEGARDE ÉTAT ====================== */
+async function idbPut(store, val, key){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readwrite');
+    store === 'kv' ? t.objectStore(store).put(val, key) : t.objectStore(store).put(val);
+    t.oncomplete = () => res();
+    t.onerror = () => rej(t.error);
+  });
+}
+
+async function idbGet(store, key){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readonly');
+    const rq = t.objectStore(store).get(key);
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+
+async function idbDel(store, key){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readwrite');
+    t.objectStore(store).delete(key);
+    t.oncomplete = () => res();
+    t.onerror = () => rej(t.error);
+  });
+}
+
+async function idbAll(store){
+  return new Promise((res, rej) => {
+    const t = DB.transaction(store, 'readonly');
+    const rq = t.objectStore(store).getAll();
+    rq.onsuccess = () => res(rq.result || []);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+
+/* ====================== SAUVEGARDE ====================== */
 function scheduleSave(){
   state.meta.updated = new Date().toISOString();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persistState, 500);
 }
+
 async function persistState(){
-  try{
-    if(idbOK){ await idbPut('kv', JSON.parse(JSON.stringify(state)), 'state'); }
-    else { localStorage.setItem('wadra_state_v2', JSON.stringify(state)); }
-  }catch(e){
-    try{ localStorage.setItem('wadra_state_v2', JSON.stringify(state)); }catch(_){}
+  try {
+    if(idbOK) await idbPut('kv', JSON.parse(JSON.stringify(state)), 'state');
+    else localStorage.setItem('wadra_state_v3', JSON.stringify(state));
+  } catch(e) {
+    try { localStorage.setItem('wadra_state_v3', JSON.stringify(state)); } catch(_) {}
   }
 }
 
-/* ====================== SYNCHRO : marquage des modifications ====================== */
 function touch(id){
-  state.ts = state.ts || {};
   state.dirty = state.dirty || {};
-  state.ts[id] = new Date().toISOString();
   state.dirty[id] = 1;
   scheduleSave();
-  if(window.Sync && window.Sync.kick) window.Sync.kick();
 }
 
 /* ====================== HELPERS ====================== */
-function $(id){return document.getElementById(id);}
-function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');
-  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
-function dateStr(){const d=new Date();const p=n=>String(n).padStart(2,'0');
-  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-function fd(key){ if(!state.equip[key]) state.equip[key]={}; return state.equip[key]; }
-function zoneById(id){ return BASE.zones.find(z=>z.id==id); }
-function zoneShortName(z){ return z.tab.replace(/^\d+-/,'').trim(); }
-
-function zoneEquip(z){
-  const list=[];
-  z.equipments.forEach((e,idx)=>{
-    if(e.src) return; // élément « source » déplacé vers la zone 0 — masqué ici (clés inchangées)
-    list.push({key:'z'+z.id+'_b'+idx, isCustom:false, base:e, n:e.n||String(idx+1)});
-  });
-  (state.custom[z.id]||[]).forEach(c=>{
-    list.push({key:'z'+z.id+'_c'+c.cid, isCustom:true, cid:c.cid,
-      base:{equipement:c.name||'Équipement ajouté',aRelever:'AJOUT',ref:'Ajouté sur site',
-            notice:'',marque:'',modele:'',puissance:'',qte:'',local:'',aVerifier:''},
-      n:'+'});
-  });
-  return list;
-}
-function isDone(key){ const f=state.equip[key]; return !!(f&&f.statut); }
-function photosFor(key){
-  return Object.values(photos).filter(p=>p.key===key).sort((a,b)=>a.id<b.id?-1:1);
-}
-function zoneCounts(z){
-  const eq=zoneEquip(z); let done=0;
-  eq.forEach(e=>{ if(isDone(e.key)) done++; });
-  return {total:eq.length, done:done};
-}
-function globalCounts(){
-  let total=0,done=0,photoN=Object.keys(photos).length;
-  BASE.zones.forEach(z=>{const c=zoneCounts(z);total+=c.total;done+=c.done;});
-  return {total,done,photoN};
+function $(id){ return document.getElementById(id); }
+function esc(s){ return (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-/* ====================== IMAGE : redimensionnement ====================== */
-async function shrink(file){
-  const MAX=1600, Q=0.72;
-  let bmp=null;
-  try{ bmp=await createImageBitmap(file,{imageOrientation:'from-image'}); }
-  catch(e){ try{ bmp=await createImageBitmap(file); }catch(_){ bmp=null; } }
-  if(bmp){
-    let w=bmp.width,h=bmp.height;
-    if(Math.max(w,h)>MAX){const s=MAX/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
-    const c=document.createElement('canvas');c.width=w;c.height=h;
-    c.getContext('2d').drawImage(bmp,0,0,w,h);
-    return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',Q));
-  }
-  // fallback
-  return await new Promise((res)=>{
-    const fr=new FileReader();
-    fr.onload=()=>{const img=new Image();
-      img.onload=()=>{let w=img.width,h=img.height;
-        if(Math.max(w,h)>MAX){const s=MAX/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
-        const c=document.createElement('canvas');c.width=w;c.height=h;
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        c.toBlob(b=>res(b||file),'image/jpeg',Q);};
-      img.onerror=()=>res(file);img.src=fr.result;};
-    fr.onerror=()=>res(file);fr.readAsDataURL(file);
-  });
+function findZone(zoneId){ return zones.find(z => z.id === zoneId); }
+function findRoom(zoneId, roomId){
+  const z = findZone(zoneId);
+  if(!z) return null;
+  return z.rooms.find(r => r.id === roomId);
 }
+
+function photosFor(key){ return Object.values(photos).filter(p => p.key === key); }
 
 /* ====================== PHOTOS ====================== */
-let photoTargetKey=null, photoTargetZone=null, photoTargetPlate=false;
-function triggerPhoto(key,zoneId,plate){ photoTargetKey=key;photoTargetZone=zoneId;photoTargetPlate=!!plate;$('camInput').click(); }
+let photoTargetKey = null, photoTargetPlate = false;
+
+async function shrink(file){
+  const MAX = 1600, Q = 0.72;
+  let bmp = null;
+  try { bmp = await createImageBitmap(file, {imageOrientation:'from-image'}); }
+  catch(e) { try { bmp = await createImageBitmap(file); } catch(_) { bmp = null; } }
+
+  if(bmp){
+    let w = bmp.width, h = bmp.height;
+    if(Math.max(w,h) > MAX){
+      const s = MAX / Math.max(w,h);
+      w = Math.round(w * s);
+      h = Math.round(h * s);
+    }
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    return await new Promise(r => c.toBlob(b => r(b || file), 'image/jpeg', Q));
+  }
+  return file;
+}
+
+function triggerPhoto(key, plate){
+  photoTargetKey = key;
+  photoTargetPlate = !!plate;
+  $('camInput').click();
+}
 
 $('camInput').addEventListener('change', async function(){
-  const files=[...this.files]; this.value='';
-  if(!files.length||!photoTargetKey) return;
-  toast('Traitement '+files.length+' photo(s)…');
+  const files = [...this.files];
+  this.value = '';
+  if(!files.length || !photoTargetKey) return;
+  toast('Traitement ' + files.length + ' photo(s)…');
+
   for(const f of files){
-    try{
-      const blob=await shrink(f);
-      const id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-      const rec={id:id,key:photoTargetKey,zoneId:photoTargetZone,blob:blob,plate:photoTargetPlate,synced:false};
-      if(idbOK){ await idbPut('photos',rec); }
-      rec.url=URL.createObjectURL(blob);
-      photos[id]=rec;
-    }catch(e){ toast('Erreur photo'); }
+    try {
+      const blob = await shrink(f);
+      const id = 'p' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      const rec = {id, key: photoTargetKey, blob, plate: photoTargetPlate, synced: false};
+      if(idbOK) await idbPut('photos', rec);
+      rec.url = URL.createObjectURL(blob);
+      photos[id] = rec;
+    } catch(e) { toast('Erreur photo'); }
   }
+
   renderPhotoStrip(photoTargetKey);
-  refreshEqStatus(photoTargetKey);
   toast('Photo(s) enregistrée(s)');
-  if(window.Sync && window.Sync.kick) window.Sync.kick();
+  touch('photo');
 });
 
 async function deletePhoto(id){
-  const p=photos[id]; if(!p) return;
-  state.photoDel=state.photoDel||{}; state.photoDel[id]={key:p.key,done:false};
+  const p = photos[id];
+  if(!p) return;
   if(p.url) URL.revokeObjectURL(p.url);
   delete photos[id];
-  if(idbOK){ try{ await idbDel('photos',id); }catch(e){} }
+  if(idbOK) try { await idbDel('photos', id); } catch(e) {}
   renderPhotoStrip(p.key);
-  refreshEqStatus(p.key);
   scheduleSave();
-  if(window.Sync && window.Sync.kick) window.Sync.kick();
 }
 
-/* ====================== VIEWER PHOTO ====================== */
+/* ====================== PHOTO VIEWER ====================== */
 function openViewer(id){
-  const p=photos[id]; if(!p) return;
-  viewerCurrent=id;
-  $('vImg').src=p.url;
+  const p = photos[id];
+  if(!p) return;
+  viewerCurrent = id;
+  $('vImg').src = p.url;
   $('viewer').classList.remove('hidden');
 }
-$('vClose').onclick=()=>{$('viewer').classList.add('hidden');$('vImg').src='';viewerCurrent=null;};
-$('vDel').onclick=async ()=>{
+
+$('vClose').onclick = () => {
+  $('viewer').classList.add('hidden');
+  $('vImg').src = '';
+  viewerCurrent = null;
+};
+
+$('vDel').onclick = async () => {
   if(viewerCurrent && confirm('Supprimer cette photo ?')){
     await deletePhoto(viewerCurrent);
-    $('viewer').classList.add('hidden');$('vImg').src='';viewerCurrent=null;
+    $('viewer').classList.add('hidden');
+    $('vImg').src = '';
+    viewerCurrent = null;
   }
 };
 
 /* ====================== RENDU : EN-TÊTE ====================== */
 function renderHeader(){
-  const h=$('hdr');
-  if(view.name==='home'){
-    h.innerHTML='<div class="htitle">Relevé Terrain — WADRA Bay</div>'+
-      '<button class="hbtn" id="goExp">'+IC.exp+'Export</button>';
-    $('goExp').onclick=()=>nav('export');
-  } else if(view.name==='zone'){
-    const z=zoneById(view.zoneId);
-    h.innerHTML='<button class="hbtn" id="goHome">'+IC.back+'</button>'+
-      '<div class="htitle">'+esc(z.id+'. '+zoneShortName(z))+'</div>'+
-      '<button class="hbtn" id="goExp">'+IC.exp+'</button>';
-    $('goHome').onclick=()=>nav('home');
-    $('goExp').onclick=()=>nav('export');
-  } else {
-    h.innerHTML='<button class="hbtn" id="goHome">'+IC.back+'</button>'+
-      '<div class="htitle">Export & sauvegarde</div>';
-    $('goHome').onclick=()=>nav('home');
+  const h = $('hdr');
+
+  if(view.name === 'home'){
+    h.innerHTML = '<div class="htitle">Relevé Terrain — WADRA Bay</div>';
+  } else if(view.name === 'td'){
+    const z = findZone(view.tdId);
+    h.innerHTML = '<button class="hbtn" id="goHome">' + IC.back + '</button>' +
+      '<div class="htitle">' + esc(z.name) + '</div>';
+    $('goHome').onclick = () => nav('home');
+  } else if(view.name === 'room'){
+    const z = findZone(view.tdId);
+    const r = findRoom(view.tdId, view.roomId);
+    h.innerHTML = '<button class="hbtn" id="goTD">' + IC.back + '</button>' +
+      '<div class="htitle">' + esc(r.name) + '</div>';
+    $('goTD').onclick = () => {view.roomId = null; nav('td');};
+  } else if(view.name === 'equip'){
+    const z = findZone(view.tdId);
+    const r = findRoom(view.tdId, view.roomId);
+    const e = r.equipment.find(eq => eq.id === view.equipId);
+    h.innerHTML = '<button class="hbtn" id="goRoom">' + IC.back + '</button>' +
+      '<div class="htitle">' + esc(e.name) + '</div>';
+    $('goRoom').onclick = () => {view.equipId = null; nav('room');};
   }
 }
 
 /* ====================== RENDU : ACCUEIL ====================== */
 function renderHome(){
-  const g=globalCounts();
-  const pct=g.total?Math.round(g.done/g.total*100):0;
-  let html='<div class="panel">'+
-    '<label class="fld" style="margin:0"><span>Auditeur(s)</span>'+
-    '<input id="audIn" type="text" placeholder="Votre nom" value="'+esc(state.meta.auditeur||'')+'"></label>'+
-    '<hr class="sep">'+
-    '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
-      '<b style="font-size:15px">Avancement global</b>'+
-      '<span class="small muted">'+g.done+' / '+g.total+' équipements</span></div>'+
-    '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
-    '<div class="tiny muted" style="margin-top:6px">'+pct+'% traités · '+g.photoN+' photo(s) prises'+
-      (state.meta.updated?' · enreg. '+new Date(state.meta.updated).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'')+'</div>'+
-    '</div>';
-  html+='<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Zones à relever — ordre de visite</h2>';
-  BASE.zones.forEach(z=>{
-    const c=zoneCounts(z);
-    const zp=c.total?Math.round(c.done/c.total*100):0;
-    const done=c.done===c.total&&c.total>0;
-    html+='<div class="zrow'+(done?' done':'')+'" data-z="'+z.id+'">'+
-      '<div class="znum">'+(done?'✓':z.id)+'</div>'+
-      '<div class="zbody">'+
-        '<div class="zname">'+esc(zoneShortName(z))+'</div>'+
-        '<div class="zmeta">'+c.done+'/'+c.total+' équipements'+(done?' — terminé':'')+'</div>'+
-        '<div class="barmini"><i style="width:'+zp+'%"></i></div>'+
-      '</div>'+
-      '<div class="chev">'+IC.chev+'</div></div>';
-  });
-  $('app').innerHTML=html;
-  $('audIn').addEventListener('input',function(){state.meta.auditeur=this.value;touch('meta');});
-  document.querySelectorAll('.zrow').forEach(r=>{
-    r.onclick=()=>{view.zoneId=parseInt(r.dataset.z);nav('zone');};
-  });
-  $('fab').classList.add('hidden');
-}
+  const g = globalCounts();
+  const pct = g.total ? Math.round(g.done / g.total * 100) : 0;
 
-/* ====================== RENDU : ZONE ====================== */
-function renderZone(){
-  const z=zoneById(view.zoneId);
-  const zf=state.zones[z.id]||(state.zones[z.id]={});
-  const c=zoneCounts(z);
-  let html='';
-  html+='<div class="panel"><h2>Zone '+z.id+'</h2>'+
-    '<div style="font-weight:700;font-size:15px;margin-bottom:4px">'+esc(z.title.replace(/^.*?:\s*/,''))+'</div>'+
-    '<div class="tiny muted">'+esc(z.ref)+'</div></div>';
-
-  html+='<div class="panel"><h2>Informations de la zone</h2>'+
-    '<div class="row2">'+
-      '<label class="fld"><span>Date du relevé</span><input type="date" data-zf="date" value="'+esc(zf.date||'')+'"></label>'+
-      '<label class="fld"><span>Tableau électrique</span><input type="text" data-zf="tableau" placeholder="ex. TD-SG" value="'+esc(zf.tableau||'')+'"></label>'+
-    '</div>'+
-    '<label class="fld" style="margin:0"><span>Mode de fonctionnement observé</span>'+
-      '<input type="text" data-zf="mode" placeholder="ex. en marche / à l\'arrêt" value="'+esc(zf.mode||'')+'"></label>'+
-    '</div>';
-
-  html+='<div class="chips">'+
-    '<button class="chip'+(zoneFilter==='all'?' on':'')+'" data-f="all">Tous ('+c.total+')</button>'+
-    '<button class="chip'+(zoneFilter==='todo'?' on':'')+'" data-f="todo">À faire ('+(c.total-c.done)+')</button>'+
-    '<button class="chip'+(zoneFilter==='done'?' on':'')+'" data-f="done">Traités ('+c.done+')</button>'+
-  '</div>';
-
-  html+='<div id="eqlist">';
-  zoneEquip(z).forEach(eq=>{ html+=eqCardHTML(z,eq); });
-  html+='</div>';
-
-  html+='<button class="addeq" id="addEq">'+IC.plus+' Ajouter un équipement</button>';
-  html+='<button class="btn ghost" id="expZoneBtn" style="margin-top:10px">'+IC.exp+' Exporter cette zone</button>';
-
-  $('app').innerHTML=html;
-
-  document.querySelectorAll('[data-zf]').forEach(inp=>{
-    inp.addEventListener('input',function(){zf[this.dataset.zf]=this.value;touch('zone:'+z.id);});
-  });
-  document.querySelectorAll('.chip').forEach(ch=>{
-    ch.onclick=()=>{zoneFilter=ch.dataset.f;renderZone();};
-  });
-  $('addEq').onclick=()=>addCustom(z.id);
-  $('expZoneBtn').onclick=()=>doExportZone(z.id);
-  bindEqCards(z);
-  applyFilter();
-  $('fab').classList.add('hidden');
-}
-
-function eqCardHTML(z,eq){
-  const f=state.equip[eq.key]||{};
-  const b=eq.base;
-  const st=f.statut||'';
-  const ph=photosFor(eq.key);
-  const qte=(f.qte!==undefined?f.qte:b.qte)||'';
-  const local=(f.local!==undefined?f.local:b.local)||'';
-  let badge='';
-  if(eq.isCustom) badge='<span class="badge add">AJOUTÉ SUR SITE</span>';
-  else if(b.aRelever==='OUI') badge='<span class="badge oui">À RELEVER</span>';
-  else badge='<span class="badge conf">À CONFIRMER</span>';
-
-  let body='<div class="eqbody">';
-  body+=badge;
-
-  if(eq.isCustom){
-    body+='<label class="fld"><span>Nom de l\'équipement</span>'+
-      '<input type="text" data-cn="'+eq.cid+'" data-z="'+z.id+'" value="'+esc(b.equipement)+'" placeholder="Désignation"></label>';
-  }
-  // consigne
-  if(!eq.isCustom && b.aVerifier){
-    body+='<div class="consigne"><b>Consigne :</b> '+esc(b.aVerifier)+'</div>';
-  }
-  // info reference
-  let info=[];
-  if(b.ref) info.push('<b>Réf. :</b> '+esc(b.ref));
-  if(b.notice) info.push('<b>Notice :</b> '+esc(b.notice));
-  if(info.length) body+='<div class="infobox">'+info.join('<br>')+'</div>';
-  // connu
-  let connu=[];
-  if(b.marque) connu.push('Marque : '+esc(b.marque));
-  if(b.modele) connu.push('Modèle : '+esc(b.modele));
-  if(b.puissance) connu.push('Puissance : '+esc(b.puissance));
-  if(connu.length) body+='<div class="infobox" style="background:#eef4f3"><b>Déjà connu (doc.) :</b><br>'+connu.join(' · ')+'</div>';
-
-  // statut
-  body+='<div style="font-size:12.5px;font-weight:600;color:#55606b;margin:6px 0 2px">Statut du relevé</div>';
-  body+='<div class="seg" data-key="'+eq.key+'">'+
-    '<button data-s="ok" class="'+(st==='ok'?'on':'')+'">Relevé OK</button>'+
-    '<button data-s="absent" class="'+(st==='absent'?'on':'')+'">Non trouvé</button>'+
-    '<button data-s="na" class="'+(st==='na'?'on':'')+'">Sans objet</button>'+
-  '</div>';
-
-  // champs
-  body+='<div class="row2">'+
-    '<label class="fld"><span>Quantité constatée</span><input type="text" inputmode="numeric" data-ef="qte" data-key="'+eq.key+'" value="'+esc(qte)+'"></label>'+
-    '<label class="fld"><span>Local précis</span><input type="text" data-ef="local" data-key="'+eq.key+'" value="'+esc(local)+'"></label>'+
-  '</div>';
-  body+='<div class="row2">'+
-    '<label class="fld"><span>Marque relevée (plaque)</span><input type="text" data-ef="marque" data-key="'+eq.key+'" value="'+esc(f.marque||'')+'"></label>'+
-    '<label class="fld"><span>Modèle relevé (plaque)</span><input type="text" data-ef="modele" data-key="'+eq.key+'" value="'+esc(f.modele||'')+'"></label>'+
-  '</div>';
-  const pwAuto=!!f.pwAuto;
-  body+='<label class="fld"><span>Puissance relevée (plaque signalétique)'+
-    (pwAuto?' <span class="badge pwbadge" style="background:#fdecd2;color:#9a6516;margin:0">⚡ auto — à valider</span>':'')+'</span>'+
-    '<input type="text" data-ef="puissance" data-key="'+eq.key+'" placeholder="ex. 2,2 kW — 400V" value="'+esc(f.puissance||'')+'"'+(pwAuto?' style="border-color:#e0892a;background:#fff8ee"':'')+'></label>';
-  if(pwAuto){
-    if(f.pwNote) body+='<div class="tiny muted" style="margin:-6px 0 7px">'+esc(f.pwNote)+'</div>';
-    body+='<button class="btn sec" data-valider="'+eq.key+'" style="margin:-2px 0 11px;padding:9px">✓ Valider cette puissance</button>';
-  }
-  body+='<label class="fld"><span>Observations terrain</span>'+
-    '<textarea data-ef="observations" data-key="'+eq.key+'" placeholder="État, vétusté, remarques…">'+esc(f.observations||'')+'</textarea></label>';
-
-  // photo plaque signalétique (pour calcul auto de la puissance)
-  body+='<div style="font-size:12.5px;font-weight:700;color:#9a6516;margin:6px 0 2px">⚡ Plaque signalétique <span style="font-weight:500;color:#8a949c">(pour puissance auto)</span></div>';
-  body+='<div class="photos" id="pl_'+eq.key+'"></div>';
-  // photos générales de l'équipement
-  body+='<div style="font-size:12.5px;font-weight:600;color:#55606b;margin:9px 0 2px">Photos de l\'équipement</div>';
-  body+='<div class="photos" id="ph_'+eq.key+'"></div>';
-
-  if(eq.isCustom){
-    body+='<button class="btn danger" style="margin-top:11px" data-del="'+eq.cid+'" data-z="'+z.id+'">Supprimer cet équipement</button>';
-  }
-  body+='</div>';
-
-  return '<div class="eq'+(st?' s-'+st:'')+'" id="eq_'+eq.key+'" data-key="'+eq.key+'" data-done="'+(st?1:0)+'">'+
-    '<div class="eqhead">'+
-      '<div class="dot"></div>'+
-      '<div class="eqh-body">'+
-        '<div class="eqh-name">'+esc(eq.isCustom?'+ ':(eq.n+'. '))+esc(b.equipement)+'</div>'+
-        '<div class="eqh-sub" id="sub_'+eq.key+'">'+eqSub(eq,f,b,ph.length)+'</div>'+
-      '</div>'+
-      '<div class="eqh-right">'+
-        '<span class="pcount" id="pc_'+eq.key+'">'+(ph.length?IC.cam+ph.length:'')+'</span>'+
-        '<div class="chev">'+IC.chev+'</div>'+
-      '</div>'+
-    '</div>'+body+'</div>';
-}
-function eqSub(eq,f,b,nph){
-  const st=f.statut||'';
-  let parts=[STAT[st].short];
-  const loc=(f.local!==undefined?f.local:b.local);
-  if(loc) parts.push(loc);
-  return esc(parts.join(' · '));
-}
-
-function bindEqCards(z){
-  document.querySelectorAll('#eqlist .eq').forEach(card=>{
-    const key=card.dataset.key;
-    card.querySelector('.eqhead').onclick=(e)=>{
-      const wasOpen=card.classList.contains('open');
-      if(!wasOpen){
-        document.querySelectorAll('#eqlist .eq.open').forEach(o=>o.classList.remove('open'));
-      }
-      card.classList.toggle('open');
-      if(!wasOpen){
-        renderPhotoStrip(key);
-        setTimeout(()=>card.scrollIntoView&&card.scrollIntoView({behavior:'smooth',block:'start'}),120);
-      }
-    };
-    // segmented
-    card.querySelectorAll('.seg button').forEach(btn=>{
-      btn.onclick=(e)=>{e.stopPropagation();
-        const s=btn.dataset.s;const cur=(state.equip[key]||{}).statut||'';
-        fd(key).statut = (cur===s)?'':s;
-        card.querySelectorAll('.seg button').forEach(b2=>b2.classList.toggle('on',b2.dataset.s===fd(key).statut));
-        refreshEqStatus(key);touch('equip:'+key);
-      };
-    });
-    // text fields
-    card.querySelectorAll('[data-ef]').forEach(inp=>{
-      inp.addEventListener('input',function(){
-        fd(key)[this.dataset.ef]=this.value;
-        if(this.dataset.ef==='local') refreshEqStatus(key);
-        if(this.dataset.ef==='puissance') fd(key).pwAuto=false;
-        touch('equip:'+key);
-      });
-    });
-    // custom name
-    card.querySelectorAll('[data-cn]').forEach(inp=>{
-      inp.addEventListener('input',function(){
-        const cid=parseInt(this.dataset.cn),zid=parseInt(this.dataset.z);
-        const arr=state.custom[zid]||[];const o=arr.find(x=>x.cid===cid);
-        if(o){o.name=this.value;
-          card.querySelector('.eqh-name').textContent='+ '+this.value;}
-        touch('custom:'+zid+':'+cid);
-      });
-    });
-    // delete custom
-    card.querySelectorAll('[data-del]').forEach(btn=>{
-      btn.onclick=(e)=>{e.stopPropagation();
-        delCustom(parseInt(btn.dataset.z),parseInt(btn.dataset.del));
-      };
-    });
-    // valider la puissance auto
-    card.querySelectorAll('[data-valider]').forEach(btn=>{
-      btn.onclick=(e)=>{e.stopPropagation();
-        const k=btn.dataset.valider;
-        if(fd(k).pwAuto){ fd(k).pwAuto=false; touch('equip:'+k); }
-        const bg=card.querySelector('.pwbadge'); if(bg) bg.remove();
-        const inp=card.querySelector('[data-ef="puissance"]'); if(inp){inp.style.borderColor='';inp.style.background='';}
-        btn.remove();
-        toast('Puissance validée');
-      };
-    });
-  });
-}
-
-function renderPhotoStrip(key){
-  renderStripKind(key,true);   // plaque -> pl_
-  renderStripKind(key,false);  // équipement -> ph_
-}
-function renderStripKind(key,plate){
-  const box=$((plate?'pl_':'ph_')+key); if(!box) return;
-  const ph=photosFor(key).filter(p=>(!!p.plate)===plate);
-  let h='';
-  ph.forEach(p=>{
-    h+='<div class="thumb" data-pid="'+p.id+'"><img src="'+p.url+'" alt="">'+
-       (plate?'<span style="position:absolute;top:2px;left:2px;background:#e0892a;color:#fff;font-size:10px;padding:0 3px;border-radius:4px">⚡</span>':'')+'</div>';
-  });
-  h+='<button class="addphoto'+(plate?'':'')+'" data-add="'+key+'" data-plate="'+(plate?1:0)+'"'+(plate?' style="border-color:#e0a64a;color:#9a6516"':'')+'>'+
-     (plate?'<span style="font-size:20px">⚡</span>':IC.cam)+'<span>'+(plate?'PLAQUE':'AJOUTER')+'</span></button>';
-  box.innerHTML=h;
-  box.querySelectorAll('.thumb').forEach(t=>{ t.onclick=()=>openViewer(t.dataset.pid); });
-  const addBtn=box.querySelector('[data-add]');
-  if(addBtn) addBtn.onclick=()=>triggerPhoto(key, view.zoneId, plate);
-}
-
-function refreshEqStatus(key){
-  const card=$('eq_'+key); if(!card) return;
-  const f=state.equip[key]||{};
-  const st=f.statut||'';
-  card.classList.remove('s-ok','s-absent','s-na');
-  if(st) card.classList.add('s-'+st);
-  card.dataset.done=st?1:0;
-  // sub
-  const eqObj=currentZoneEq(key);
-  if(eqObj){
-    const sub=$('sub_'+key);
-    if(sub) sub.textContent=eqSub(eqObj,f,eqObj.base,0);
-  }
-  // photo count
-  const ph=photosFor(key);
-  const pc=$('pc_'+key);
-  if(pc) pc.innerHTML=ph.length?IC.cam+ph.length:'';
-  updateZoneHeaderCounts();
-}
-function currentZoneEq(key){
-  const z=zoneById(view.zoneId); if(!z) return null;
-  return zoneEquip(z).find(e=>e.key===key);
-}
-function updateZoneHeaderCounts(){
-  const z=zoneById(view.zoneId); if(!z) return;
-  const c=zoneCounts(z);
-  const chips=document.querySelectorAll('.chip');
-  if(chips.length===3){
-    chips[0].textContent='Tous ('+c.total+')';
-    chips[1].textContent='À faire ('+(c.total-c.done)+')';
-    chips[2].textContent='Traités ('+c.done+')';
-  }
-  applyFilter();
-}
-function applyFilter(){
-  document.querySelectorAll('#eqlist .eq').forEach(card=>{
-    const done=card.dataset.done==='1';
-    let show=true;
-    if(zoneFilter==='todo') show=!done;
-    else if(zoneFilter==='done') show=done;
-    card.style.display=show?'':'none';
-  });
-}
-
-/* ====================== ÉQUIPEMENTS PERSONNALISÉS ====================== */
-function addCustom(zoneId){
-  if(!state.custom[zoneId]) state.custom[zoneId]=[];
-  const cid=Date.now();
-  state.custom[zoneId].push({cid:cid,name:'Nouvel équipement'});
-  touch('custom:'+zoneId+':'+cid);
-  renderZone();
-  setTimeout(()=>{
-    const card=$('eq_z'+zoneId+'_c'+cid);
-    if(card){card.classList.add('open');renderPhotoStrip('z'+zoneId+'_c'+cid);
-      card.scrollIntoView&&card.scrollIntoView({behavior:'smooth',block:'center'});
-      const ni=card.querySelector('[data-cn]'); if(ni){ni.focus();ni.select();}
-    }
-  },150);
-}
-async function delCustom(zoneId,cid){
-  if(!confirm('Supprimer cet équipement ajouté et ses photos ?')) return;
-  const key='z'+zoneId+'_c'+cid;
-  for(const p of photosFor(key)){ await deletePhoto(p.id); }
-  state.custom[zoneId]=(state.custom[zoneId]||[]).filter(x=>x.cid!==cid);
-  delete state.equip[key];
-  state.customDel=state.customDel||{}; state.customDel[zoneId+':'+cid]=true;
-  touch('custom:'+zoneId+':'+cid);
-  renderZone();
-}
-
-/* ====================== EXPORT D'UNE SEULE ZONE ====================== */
-function buildWorkbookOneZone(z,namesByKey){
-  const wb=XLSX.utils.book_new();
-  const HEAD=['N°','À relever ?','Équipement','Qté constatée','Local précis','Réf. / Preuve',
-    'Notice dispo ?','Marque connue','Marque relevée','Modèle connu','Modèle relevé',
-    'Puissance connue','Puissance relevée','Statut relevé','Photos','Observations terrain','À vérifier sur place'];
-  const zf=state.zones[z.id]||{};
-  const aoa=[[z.title],[z.ref],
-    ['Relevé par : '+(state.meta.auditeur||''),'Date : '+(zf.date||''),
-     'Tableau électrique : '+(zf.tableau||''),'Mode fonct. : '+(zf.mode||'')],[],HEAD];
-  zoneEquip(z).forEach(eq=>{
-    const b=eq.base;const f=state.equip[eq.key]||{};
-    aoa.push([eq.isCustom?('Ajout '+eq.cid):b.n,eq.isCustom?'AJOUTÉ SUR SITE':b.aRelever,b.equipement,
-      (f.qte!==undefined?f.qte:b.qte)||'',(f.local!==undefined?f.local:b.local)||'',
-      b.ref||'',b.notice||'',b.marque||'',f.marque||'',b.modele||'',f.modele||'',
-      b.puissance||'',f.puissance||'',statLabel(f.statut),(namesByKey[eq.key]||[]).join('\n'),
-      f.observations||'',b.aVerifier||'']);
-  });
-  const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:8},{wch:13},{wch:32},{wch:12},{wch:20},{wch:22},{wch:18},
-    {wch:15},{wch:15},{wch:15},{wch:15},{wch:15},{wch:16},{wch:12},{wch:26},{wch:34},{wch:30}];
-  XLSX.utils.book_append_sheet(wb,ws,z.tab.replace(/[\[\]\*\?\/\\:]/g,' ').slice(0,31));
-  return wb;
-}
-async function doExportZone(zoneId){
-  try{
-    const z=zoneById(zoneId);
-    toast('Préparation de la zone '+z.id+'…');
-    await persistState();
-    const files=[]; const namesByKey={};
-    zoneEquip(z).forEach(eq=>{
-      const ps=photosFor(eq.key);
-      if(!ps.length) return;
-      const code=eq.isCustom?('C'+eq.cid):('E'+eq.n);
-      const nm=slug(eq.base.equipement);
-      const list=[];
-      ps.forEach((p,i)=>{
-        const fname='Z'+pad2(z.id)+'_'+code+'_'+nm+(p.plate?'_PLAQUE':'')+'_'+(i+1)+'.jpg';
-        list.push(fname); files.push({name:fname,blob:p.blob});
-      });
-      namesByKey[eq.key]=list;
-    });
-    const base='WADRA_Z'+pad2(z.id)+'_'+slug(zoneShortName(z));
-    const out=[];
-    const arr=XLSX.write(buildWorkbookOneZone(z,namesByKey),{bookType:'xlsx',type:'array'});
-    out.push(new File([arr],base+'.xlsx',{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-    if(files.length){
-      const zip=new JSZip();
-      files.forEach(f=>zip.file(base+'_photos/'+f.name,f.blob));
-      const blob=await zip.generateAsync({type:'blob'});
-      out.push(new File([blob],base+'_photos.zip',{type:'application/zip'}));
-    }
-    await deliver(out);
-    toast('Zone '+z.id+' exportée — '+files.length+' photo(s)');
-  }catch(e){ toast('Erreur export zone : '+e.message); }
-}
-
-/* ====================== RENDU : EXPORT ====================== */
-function renderExport(){
-  const g=globalCounts();
-  let okN=0,absN=0;
-  Object.values(state.equip).forEach(f=>{if(f.statut==='ok')okN++;else if(f.statut==='absent')absN++;});
-  let html='';
-  if(!idbOK){
-    html+='<div class="banner"><b>Stockage limité.</b> La sauvegarde permanente n\'est pas active sur cet appareil. '+
-      'Exportez vos données régulièrement pour ne rien perdre.</div>';
-  }
-  html+='<div class="panel"><h2>Avancement</h2>'+
-    '<div class="kpi">'+
-      '<div><div class="v">'+g.done+'</div><div class="l">traités / '+g.total+'</div></div>'+
-      '<div><div class="v">'+okN+'</div><div class="l">relevés OK</div></div>'+
-      '<div><div class="v">'+g.photoN+'</div><div class="l">photos</div></div>'+
+  let html = '<div class="panel">' +
+    '<label class="fld" style="margin:0"><span>Auditeur(s)</span>' +
+    '<input id="audIn" type="text" placeholder="Votre nom" value="' + esc(state.meta.auditeur || '') + '"></label>' +
+    '<hr style="border:none;border-top:1px solid #eef1f2;margin:12px 0">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+    '<b style="font-size:15px">Avancement global</b>' +
+    '<span class="small muted">' + g.done + ' / ' + g.total + ' équipements</span></div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="tiny muted" style="margin-top:6px">' + pct + '% traités · ' + g.photoN + ' photo(s)' +
+    (state.meta.updated ? ' · enreg. ' + new Date(state.meta.updated).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '') +
     '</div></div>';
 
-  html+='<div class="panel"><h2>Exporter le relevé</h2>'+
-    '<p class="small muted" style="margin-bottom:11px">Génère un fichier Excel (1 onglet par zone, reproduisant la grille v11) '+
-      'et un dossier ZIP des photos. Pour limiter le poids des envois, vous pouvez aussi exporter <b>zone par zone</b> &mdash; bouton en bas de chaque zone.</p>'+
-    '<button class="btn primary" id="expAll">'+IC.exp+' Tout exporter (Excel + photos)</button>'+
-    '<button class="btn sec" id="expXls">Excel seul (.xlsx)</button>'+
-    '<button class="btn sec" id="expZip">Photos seules (.zip)</button>'+
-  '</div>';
+  html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Tableaux Divisionnaires</h2>';
 
-  html+='<div class="panel"><h2>Sauvegarde de sécurité</h2>'+
-    '<p class="small muted" style="margin-bottom:11px">La sauvegarde complète (.json) contient toutes vos saisies '+
-      '<b>et</b> les photos. Conservez-la dans Fichiers / iCloud. Elle permet de tout restaurer.</p>'+
-    '<button class="btn ghost" id="bkSave">'+IC.save+' Sauvegarde complète (.json)</button>'+
-    '<button class="btn sec" id="bkLoad">Restaurer une sauvegarde</button>'+
-  '</div>';
+  zones.forEach(z => {
+    const c = countsTD(z);
+    const zp = c.total ? Math.round(c.done / c.total * 100) : 0;
+    html += '<div class="row-item" data-z="' + z.id + '">' +
+      '<div class="row-icon">' + z.name.slice(0,2).toUpperCase() + '</div>' +
+      '<div class="row-body">' +
+      '<div class="row-title">' + esc(z.name) + '</div>' +
+      '<div class="row-desc">' + c.total + ' équipements · ' + zp + '%</div>' +
+      '</div>' +
+      '<div class="row-chev">' + IC.chev + '</div></div>';
+  });
 
-  html+='<div class="panel"><h2>⚡ Puissances auto (depuis les plaques)</h2>'+
-    '<p class="small muted" style="margin-bottom:11px">Importez le fichier de puissances calculées à partir des photos de plaques. '+
-      'Chaque valeur se place dans l\'équipement correspondant, marquée <b>« à valider »</b> — vous confirmez d\'un appui. '+
-      'N\'écrase pas les puissances déjà validées manuellement.</p>'+
-    '<button class="btn sec" id="impPuiss">Importer des puissances (.json)</button>'+
-  '</div>';
-
-  html+='<div class="panel"><h2>Mode d\'emploi</h2>'+
-    '<ol class="steps">'+
-      '<li>Ajoutez cette page à l\'écran d\'accueil : bouton <b>Partager</b> de Safari → <b>Sur l\'écran d\'accueil</b>. Elle s\'ouvrira comme une appli, même <b>sans réseau</b>.</li>'+
-      '<li>Sur le terrain : ouvrez une zone, dépliez un équipement, choisissez le <b>statut</b>, saisissez les valeurs et <b>prenez les photos</b>.</li>'+
-      '<li>Tout est enregistré automatiquement sur le téléphone.</li>'+
-      '<li>En fin de journée : <b>Tout exporter</b> puis envoyez les fichiers (AirDrop / e-mail) vers votre ordinateur.</li>'+
-      '<li>Par sécurité, faites aussi une <b>Sauvegarde complète .json</b> de temps en temps.</li>'+
-    '</ol></div>';
-
-  html+='<div class="panel" style="background:#fbece9;box-shadow:none">'+
-    '<button class="btn danger" id="resetAll" style="border:none;background:transparent;color:#c0392b">Réinitialiser toutes les données</button>'+
-  '</div>';
-
-  $('app').innerHTML=html;
-  $('expAll').onclick=()=>doExport(true,true);
-  $('expXls').onclick=()=>doExport(true,false);
-  $('expZip').onclick=()=>doExport(false,true);
-  $('bkSave').onclick=doBackup;
-  $('bkLoad').onclick=()=>$('restoreInput').click();
-  $('impPuiss').onclick=()=>$('puissInput').click();
-  $('resetAll').onclick=doReset;
-  $('fab').classList.add('hidden');
+  $('app').innerHTML = html;
+  $('audIn').addEventListener('input', function(){ state.meta.auditeur = this.value; touch('meta'); });
+  document.querySelectorAll('.row-item').forEach(r => {
+    r.onclick = () => { view.tdId = r.dataset.z; nav('td'); };
+  });
 }
 
-/* ====================== EXPORT EXCEL + ZIP ====================== */
-function slug(s){
-  return (s||'equipement').toString().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30)||'equipement';
-}
-function pad2(n){return String(n).padStart(2,'0');}
-function statLabel(s){return STAT[s||''].label;}
-
-function buildPhotoIndex(){
-  // -> {filesByZone:{folder:[{name,blob}]}, namesByKey:{key:[name]}}
-  const namesByKey={}, files=[];
-  BASE.zones.forEach(z=>{
-    const folder='Z'+pad2(z.id)+'_'+slug(zoneShortName(z));
-    zoneEquip(z).forEach(eq=>{
-      const ps=photosFor(eq.key);
-      if(!ps.length) return;
-      const code=eq.isCustom?('C'+eq.cid):('E'+eq.n);
-      const nm=slug(eq.base.equipement);
-      const list=[];
-      ps.forEach((p,i)=>{
-        const fname='Z'+pad2(z.id)+'_'+code+'_'+nm+(p.plate?'_PLAQUE':'')+'_'+(i+1)+'.jpg';
-        list.push(fname);
-        files.push({path:folder+'/'+fname,blob:p.blob});
-      });
-      namesByKey[eq.key]=list;
+function countsTD(z){
+  let total = 0, done = 0;
+  z.rooms.forEach(r => {
+    r.equipment.forEach(e => {
+      total++;
+      if((state.equip[e.id] || {}).statut) done++;
     });
   });
-  return {files,namesByKey};
+  return {total, done};
 }
 
-function buildWorkbook(namesByKey){
-  const wb=XLSX.utils.book_new();
-  const HEAD=['N°','À relever ?','Équipement','Qté constatée','Local précis','Réf. / Preuve',
-    'Notice dispo ?','Marque connue','Marque relevée','Modèle connu','Modèle relevé',
-    'Puissance connue','Puissance relevée','Statut relevé','Photos','Observations terrain','À vérifier sur place'];
-  // Sommaire
-  const som=[['RELEVÉ TERRAIN — HÔTEL WADRA BAY'],
-    ['Export du '+new Date().toLocaleString('fr-FR')],
-    ['Auditeur(s) : '+(state.meta.auditeur||'—')],
-    [],
-    ['Zone','Équipements','Traités','Relevés OK','Photos','Avancement']];
-  let tT=0,tD=0,tO=0,tP=0;
-  BASE.zones.forEach(z=>{
-    const eq=zoneEquip(z);let d=0,o=0,p=0;
-    eq.forEach(e=>{const f=state.equip[e.key]||{};if(f.statut)d++;if(f.statut==='ok')o++;p+=photosFor(e.key).length;});
-    tT+=eq.length;tD+=d;tO+=o;tP+=p;
-    som.push([z.id+'. '+zoneShortName(z),eq.length,d,o,p,(eq.length?Math.round(d/eq.length*100):0)+'%']);
+function globalCounts(){
+  let total = 0, done = 0, photoN = Object.keys(photos).length;
+  zones.forEach(z => {
+    const c = countsTD(z);
+    total += c.total;
+    done += c.done;
   });
-  som.push([]);
-  som.push(['TOTAL',tT,tD,tO,tP,(tT?Math.round(tD/tT*100):0)+'%']);
-  const wsS=XLSX.utils.aoa_to_sheet(som);
-  wsS['!cols']=[{wch:34},{wch:14},{wch:10},{wch:12},{wch:9},{wch:13}];
-  XLSX.utils.book_append_sheet(wb,wsS,'Sommaire');
-  // Zones
-  BASE.zones.forEach(z=>{
-    const zf=state.zones[z.id]||{};
-    const aoa=[];
-    aoa.push([z.title]);
-    aoa.push([z.ref]);
-    aoa.push(['Relevé par : '+(state.meta.auditeur||''),
-      'Date : '+(zf.date||''),'Tableau électrique : '+(zf.tableau||''),
-      'Mode fonct. : '+(zf.mode||'')]);
-    aoa.push([]);
-    aoa.push(HEAD);
-    zoneEquip(z).forEach(eq=>{
-      const b=eq.base;const f=state.equip[eq.key]||{};
-      aoa.push([
-        eq.isCustom?('Ajout '+eq.cid):b.n,
-        eq.isCustom?'AJOUTÉ SUR SITE':b.aRelever,
-        eq.isCustom?(b.equipement):b.equipement,
-        (f.qte!==undefined?f.qte:b.qte)||'',
-        (f.local!==undefined?f.local:b.local)||'',
-        b.ref||'',b.notice||'',
-        b.marque||'',f.marque||'',
-        b.modele||'',f.modele||'',
-        b.puissance||'',f.puissance||'',
-        statLabel(f.statut),
-        (namesByKey[eq.key]||[]).join('\n'),
-        f.observations||'',
-        b.aVerifier||''
-      ]);
-    });
-    const ws=XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols']=[{wch:8},{wch:13},{wch:32},{wch:12},{wch:20},{wch:22},{wch:18},
-      {wch:15},{wch:15},{wch:15},{wch:15},{wch:15},{wch:16},{wch:12},{wch:26},{wch:34},{wch:30}];
-    let nm=z.tab.replace(/[\[\]\*\?\/\\:]/g,' ').slice(0,31);
-    XLSX.utils.book_append_sheet(wb,ws,nm);
-  });
-  return wb;
+  return {total, done, photoN};
 }
 
-async function deliver(fileArr){
-  // try native share (iOS) then fallback download
-  if(navigator.canShare){
-    try{
-      if(navigator.canShare({files:fileArr})){
-        await navigator.share({files:fileArr,title:'Relevé WADRA Bay'});
-        return;
-      }
-    }catch(e){ if(e && e.name==='AbortError') return; }
+/* ====================== RENDU : TD (Pièces) ====================== */
+function renderTD(){
+  const z = findZone(view.tdId);
+  const c = countsTD(z);
+  const zp = c.total ? Math.round(c.done / c.total * 100) : 0;
+
+  let html = '<div class="panel">' +
+    '<h2>' + esc(z.name) + '</h2>' +
+    '<div style="font-weight:700;font-size:15px;margin-bottom:4px">' + esc(z.fullName) + '</div>' +
+    '<div class="tiny muted">' + (z.kVA || '') + '</div>' +
+    '<hr style="border:none;border-top:1px solid #eef1f2;margin:9px 0">' +
+    '<div style="display:flex;justify-content:space-between"><span class="small">Avancement</span>' + c.done + '/' + c.total + '</div>' +
+    '<div class="bar"><i style="width:' + zp + '%"></i></div>' +
+    '</div>';
+
+  html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Pièces</h2>';
+
+  z.rooms.forEach(r => {
+    const rc = r.equipment.length;
+    const rd = r.equipment.filter(e => (state.equip[e.id] || {}).statut).length;
+    html += '<div class="row-item" data-r="' + r.id + '">' +
+      '<div class="row-icon">📍</div>' +
+      '<div class="row-body">' +
+      '<div class="row-title">' + esc(r.name) + '</div>' +
+      '<div class="row-desc">' + rc + ' équipements · ' + rd + ' traités</div>' +
+      '</div>' +
+      '<div class="row-chev">' + IC.chev + '</div></div>';
+  });
+
+  html += '<button class="btn sec" id="addRoom" style="margin-top:9px">' + IC.plus + ' Ajouter une pièce</button>';
+
+  $('app').innerHTML = html;
+
+  document.querySelectorAll('.row-item').forEach(r => {
+    r.onclick = () => { view.roomId = r.dataset.r; nav('room'); };
+  });
+
+  $('addRoom').onclick = () => {
+    const roomId = 'room_' + Date.now();
+    const name = prompt('Nom de la pièce :');
+    if(!name) return;
+    state.rooms[roomId] = {id: roomId, name: name, equipment: []};
+    const z = findZone(view.tdId);
+    z.rooms.push({id: roomId, name: name, equipment: []});
+    touch('room:' + roomId);
+    renderTD();
+  };
+}
+
+/* ====================== RENDU : PIÈCE (Équipements) ====================== */
+function renderRoom(){
+  const z = findZone(view.tdId);
+  const r = findRoom(view.tdId, view.roomId);
+
+  let html = '<div class="panel">' +
+    '<h2>' + esc(r.name) + '</h2>' +
+    '<div class="tiny muted">' + z.name + '</div>' +
+    '</div>';
+
+  html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Équipements</h2>';
+
+  r.equipment.forEach(e => {
+    const f = state.equip[e.id] || {};
+    const st = f.statut || '';
+    const ph = photosFor(e.id);
+    html += '<div class="row-item" data-e="' + e.id + '" style="border-left:5px solid #' + (st === 'ok' ? '1a9d5a' : 'c3cad0') + '">' +
+      '<div class="row-icon">' + (st === 'ok' ? '✓' : '⚡') + '</div>' +
+      '<div class="row-body">' +
+      '<div class="row-title">' + esc(e.name) + '</div>' +
+      '<div class="row-desc">' + (f.local || 'Local non spécifié') + ' · ' + ph.length + ' photo(s)</div>' +
+      '</div>' +
+      '<div class="row-chev">' + IC.chev + '</div></div>';
+  });
+
+  html += '<button class="btn sec" id="addEquip" style="margin-top:9px">' + IC.plus + ' Ajouter un équipement</button>';
+
+  $('app').innerHTML = html;
+
+  document.querySelectorAll('.row-item').forEach(row => {
+    row.onclick = () => { view.equipId = row.dataset.e; nav('equip'); };
+  });
+
+  $('addEquip').onclick = () => {
+    const equipId = 'equip_' + Date.now();
+    const name = prompt('Nom de l\'équipement :');
+    if(!name) return;
+    const e = {id: equipId, name: name};
+    r.equipment.push(e);
+    state.equip[equipId] = {};
+    touch('equip:' + equipId);
+    renderRoom();
+  };
+}
+
+/* ====================== RENDU : ÉQUIPEMENT ====================== */
+function renderEquip(){
+  const z = findZone(view.tdId);
+  const r = findRoom(view.tdId, view.roomId);
+  const e = r.equipment.find(eq => eq.id === view.equipId);
+  const f = state.equip[e.id] || {};
+  const ph = photosFor(e.id);
+
+  let html = '<div class="panel">' +
+    '<h2>' + esc(r.name) + ' · ' + esc(z.name) + '</h2>' +
+    '<div class="row2">' +
+    '<label class="fld"><span>Statut</span>' +
+    '<select id="statSelect"><option value="">À faire</option>' +
+    '<option value="ok" ' + (f.statut === 'ok' ? 'selected' : '') + '>Relevé OK</option>' +
+    '<option value="absent" ' + (f.statut === 'absent' ? 'selected' : '') + '>Non trouvé</option>' +
+    '<option value="na" ' + (f.statut === 'na' ? 'selected' : '') + '>Sans objet</option>' +
+    '</select></label>' +
+    '<label class="fld"><span>Local précis</span>' +
+    '<input type="text" id="localInput" placeholder="Où cet équipement ?" value="' + esc(f.local || '') + '"></label>' +
+    '</div>' +
+    '<div class="row2">' +
+    '<label class="fld"><span>Marque</span>' +
+    '<input type="text" id="marqueInput" value="' + esc(f.marque || '') + '"></label>' +
+    '<label class="fld"><span>Modèle</span>' +
+    '<input type="text" id="modeleInput" value="' + esc(f.modele || '') + '"></label>' +
+    '</div>' +
+    '<label class="fld"><span>Puissance (kW)</span>' +
+    '<input type="text" id="puissanceInput" placeholder="ex. 2.2" value="' + esc(f.puissance || '') + '"' +
+    (f.pwAuto ? ' style="border-color:#e0892a;background:#fff8ee"' : '') + '></label>';
+
+  if(f.pwAuto){
+    html += '<div class="tiny muted">⚡ Calculé automatiquement depuis la plaque</div>' +
+      '<button class="btn sec" id="validerPW" style="margin:6px 0 12px;padding:9px">Valider</button>';
   }
-  for(const f of fileArr){
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(f);a.download=f.name;
-    document.body.appendChild(a);a.click();
-    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
-    await new Promise(r=>setTimeout(r,400));
+
+  html += '<label class="fld"><span>Observations</span>' +
+    '<textarea id="obsInput" placeholder="État, remarques…">' + esc(f.observations || '') + '</textarea></label>' +
+    '</div>';
+
+  html += '<div class="panel">' +
+    '<h2>Plaque signalétique</h2>' +
+    '<div class="photos" id="ph_plate"></div>' +
+    '<button class="btn sec" id="addPlatePhoto" style="margin-top:9px">⚡ Photographier la plaque</button>' +
+    '</div>';
+
+  html += '<div class="panel">' +
+    '<h2>Photos équipement</h2>' +
+    '<div class="photos" id="ph_equip"></div>' +
+    '<button class="btn sec" id="addEquipPhoto" style="margin-top:9px">' + IC.cam + ' Ajouter une photo</button>' +
+    '</div>';
+
+  $('app').innerHTML = html;
+
+  // Rendus photos
+  renderStripKind(e.id, true);   // Plaque
+  renderStripKind(e.id, false);  // Équipement
+
+  // Event listeners
+  $('statSelect').addEventListener('change', function(){
+    state.equip[e.id].statut = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('localInput').addEventListener('input', function(){
+    state.equip[e.id].local = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('marqueInput').addEventListener('input', function(){
+    state.equip[e.id].marque = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('modeleInput').addEventListener('input', function(){
+    state.equip[e.id].modele = this.value;
+    touch('equip:' + e.id);
+  });
+
+  $('puissanceInput').addEventListener('input', function(){
+    state.equip[e.id].puissance = this.value;
+    state.equip[e.id].pwAuto = false;
+    touch('equip:' + e.id);
+  });
+
+  $('obsInput').addEventListener('input', function(){
+    state.equip[e.id].observations = this.value;
+    touch('equip:' + e.id);
+  });
+
+  if($('validerPW')){
+    $('validerPW').onclick = () => {
+      state.equip[e.id].pwAuto = false;
+      touch('equip:' + e.id);
+      renderEquip();
+    };
   }
+
+  $('addPlatePhoto').onclick = () => triggerPhoto(e.id, true);
+  $('addEquipPhoto').onclick = () => triggerPhoto(e.id, false);
 }
 
-async function doExport(wantXls,wantZip){
-  try{
-    toast('Préparation de l\'export…');
-    await persistState();
-    const idx=buildPhotoIndex();
-    const out=[];
-    if(wantXls){
-      const wb=buildWorkbook(idx.namesByKey);
-      const arr=XLSX.write(wb,{bookType:'xlsx',type:'array'});
-      out.push(new File([arr],'WADRA_Bay_Releve_Terrain_'+dateStr()+'.xlsx',
-        {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-    }
-    if(wantZip){
-      if(!idx.files.length){
-        if(!wantXls){ toast('Aucune photo à exporter'); return; }
-      } else {
-        const zip=new JSZip();
-        idx.files.forEach(f=>zip.file(f.path,f.blob));
-        const blob=await zip.generateAsync({type:'blob'});
-        out.push(new File([blob],'WADRA_Bay_Photos_'+dateStr()+'.zip',{type:'application/zip'}));
-      }
-    }
-    if(!out.length){ toast('Rien à exporter'); return; }
-    await deliver(out);
-    toast('Export prêt — '+out.length+' fichier(s)');
-  }catch(e){ toast('Erreur export : '+e.message); }
-}
-
-/* ====================== SAUVEGARDE / RESTAURATION JSON ====================== */
-function blobToDataURL(b){return new Promise((res,rej)=>{
-  const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error);
-  fr.readAsDataURL(b);});}
-function dataURLtoBlob(d){
-  const i=d.indexOf(',');const meta=d.slice(0,i);const b64=d.slice(i+1);
-  const mime=(meta.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
-  const bin=atob(b64);const u=new Uint8Array(bin.length);
-  for(let k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
-  return new Blob([u],{type:mime});
-}
-async function doBackup(){
-  try{
-    toast('Création de la sauvegarde…');
-    await persistState();
-    const arr=[];
-    for(const p of Object.values(photos)){
-      arr.push({id:p.id,key:p.key,zoneId:p.zoneId,plate:!!p.plate,data:await blobToDataURL(p.blob)});
-    }
-    const obj={app:'WADRA-Releve-Terrain',fmt:1,ts:new Date().toISOString(),
-      state:state,photos:arr};
-    const blob=new Blob([JSON.stringify(obj)],{type:'application/json'});
-    await deliver([new File([blob],'WADRA_Bay_Sauvegarde_'+dateStr()+'.json',{type:'application/json'})]);
-    toast('Sauvegarde prête');
-  }catch(e){ toast('Erreur sauvegarde : '+e.message); }
-}
-$('restoreInput').addEventListener('change',async function(){
-  const file=this.files[0];this.value='';
-  if(!file) return;
-  if(!confirm('Restaurer cette sauvegarde ? Les données actuelles seront remplacées.')) return;
-  try{
-    const txt=await file.text();
-    const obj=JSON.parse(txt);
-    if(!obj.state) throw new Error('fichier invalide');
-    state=obj.state;
-    if(!state.meta) state.meta={auditeur:''};
-    if(!state.zones) state.zones={};
-    if(!state.equip) state.equip={};
-    if(!state.custom) state.custom={};
-    // photos
-    Object.values(photos).forEach(p=>{if(p.url)URL.revokeObjectURL(p.url);});
-    photos={};
-    if(idbOK){ try{await idbClear('photos');}catch(e){} }
-    for(const p of (obj.photos||[])){
-      const blob=dataURLtoBlob(p.data);
-      const rec={id:p.id,key:p.key,zoneId:p.zoneId,blob:blob,plate:!!p.plate};
-      if(idbOK){ try{await idbPut('photos',rec);}catch(e){} }
-      rec.url=URL.createObjectURL(blob);
-      photos[p.id]=rec;
-    }
-    await persistState();
-    if(window.Sync){ if(Sync.reset)Sync.reset(); if(Sync.cycle)Sync.cycle(); }
-    toast('Sauvegarde restaurée');
-    nav('home');
-  }catch(e){ alert('Restauration impossible : '+e.message); }
-});
-
-/* ====================== IMPORT DES PUISSANCES (depuis traitement des plaques) ====================== */
-$('puissInput').addEventListener('change',async function(){
-  const file=this.files[0]; this.value='';
-  if(!file) return;
-  try{
-    const obj=JSON.parse(await file.text());
-    const items=Array.isArray(obj)?obj:(obj.items||[]);
-    if(!Array.isArray(items)||!items.length) throw new Error('aucune puissance dans le fichier');
-    let n=0, skip=0;
-    items.forEach(it=>{
-      if(!it||!it.key) return;
-      const f=fd(it.key);
-      // ne pas écraser une puissance déjà validée manuellement (présente et non auto)
-      if(f.puissance && !f.pwAuto){ skip++; return; }
-      if(it.puissance!=null && String(it.puissance)!==''){
-        f.puissance=String(it.puissance); f.pwAuto=true;
-        if(it.note) f.pwNote=String(it.note);
-      }
-      if(it.marque && !f.marque) f.marque=String(it.marque);
-      if(it.modele && !f.modele) f.modele=String(it.modele);
-      if(!f.statut) f.statut='ok';
-      touch('equip:'+it.key);
-      n++;
-    });
-    await persistState();
-    if(window.Sync){ if(Sync.cycle) Sync.cycle(); }
-    toast(n+' puissance(s) importée(s)'+(skip?' · '+skip+' conservée(s)':''));
-    nav('home');
-  }catch(e){ alert('Import impossible : '+e.message); }
-});
-
-async function doReset(){
-  if(!confirm('Effacer TOUTES les données saisies et les photos ? Action irréversible.')) return;
-  if(!confirm('Confirmez-vous la réinitialisation complète ?')) return;
-  Object.values(photos).forEach(p=>{if(p.url)URL.revokeObjectURL(p.url);});
-  photos={};
-  state={meta:{auditeur:''},zones:{},equip:{},custom:{}};
-  if(idbOK){ try{await idbClear('photos');await idbDel('kv','state');}catch(e){} }
-  try{localStorage.removeItem('wadra_state_v2');}catch(e){}
-  if(window.Sync){ if(Sync.reset)Sync.reset(); if(Sync.cycle)Sync.cycle(); }
-  toast('Données réinitialisées');
-  nav('home');
+function renderStripKind(equipId, plate){
+  const box = $(plate ? 'ph_plate' : 'ph_equip');
+  if(!box) return;
+  const ph = photosFor(equipId).filter(p => (!!p.plate) === plate);
+  let h = '';
+  ph.forEach(p => {
+    h += '<div class="thumb" data-pid="' + p.id + '"><img src="' + p.url + '" alt=""></div>';
+  });
+  h += '<button class="addphoto">' + (plate ? '⚡' : IC.cam) + '<span>' + (plate ? 'PLAQ' : 'AJOUT') + '</span></button>';
+  box.innerHTML = h;
+  box.querySelectorAll('.thumb').forEach(t => {
+    t.onclick = () => openViewer(t.dataset.pid);
+  });
 }
 
 /* ====================== NAVIGATION ====================== */
 function nav(name){
-  view.name=name;
-  zoneFilter='all';
-  window.scrollTo(0,0);
+  view.name = name;
+  window.scrollTo(0, 0);
   renderHeader();
-  if(name==='home') renderHome();
-  else if(name==='zone') renderZone();
-  else renderExport();
+  if(name === 'home') renderHome();
+  else if(name === 'td') renderTD();
+  else if(name === 'room') renderRoom();
+  else if(name === 'equip') renderEquip();
 }
 
 /* ====================== DÉMARRAGE ====================== */
 async function boot(){
-  idbOK=await idbOpen();
-  try{
-    let s=null;
-    if(idbOK) s=await idbGet('kv','state');
-    if(!s){ const ls=localStorage.getItem('wadra_state_v2'); if(ls) s=JSON.parse(ls); }
-    if(s){
-      state=s;
-      state.meta=state.meta||{auditeur:''};
-      state.zones=state.zones||{};
-      state.equip=state.equip||{};
-      state.custom=state.custom||{};
+  idbOK = await idbOpen();
+
+  // Charger état
+  try {
+    let s = null;
+    if(idbOK) s = await idbGet('kv', 'state');
+    if(!s) {
+      const ls = localStorage.getItem('wadra_state_v3');
+      if(ls) s = JSON.parse(ls);
     }
-  }catch(e){}
+    if(s){
+      state = s;
+      state.meta = state.meta || {auditeur:''};
+      state.tds = state.tds || {};
+      state.equip = state.equip || {};
+      state.rooms = state.rooms || {};
+    }
+  } catch(e) {}
+
+  // Charger photos
   if(idbOK){
-    try{
-      const arr=await idbAll('photos');
-      arr.forEach(p=>{ p.url=URL.createObjectURL(p.blob); photos[p.id]=p; });
-    }catch(e){}
+    try {
+      const arr = await idbAll('photos');
+      arr.forEach(p => { p.url = URL.createObjectURL(p.blob); photos[p.id] = p; });
+    } catch(e) {}
   }
+
   nav('home');
 }
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
-boot().then(function(){ window.__APP_READY=true; if(window.Sync && window.Sync.start) window.Sync.start(); });
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+boot().then(() => { window.__APP_READY = true; });
 </script>
-<script src="./sync.js"></script>
 </body>
 </html>

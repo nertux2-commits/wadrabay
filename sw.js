@@ -1,5 +1,5 @@
-/* Service worker — Relevé Terrain WADRA Bay (grille v11 + synchro Supabase) */
-const CACHE = 'wadra-releve-v8';
+/* Service worker — Relevé Terrain WADRA Bay (TD → Pièce → Équipement + synchro Supabase) */
+const CACHE = 'wadra-releve-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -36,6 +36,3 @@ self.addEventListener('fetch', function (e) {
   e.respondWith(caches.match(e.request).then(function (cached) {
     return cached || fetch(e.request).catch(function () {
       return (e.request.mode === 'navigate') ? caches.match('./index.html') : Response.error();
-    });
-  }));
-});
