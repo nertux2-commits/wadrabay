@@ -186,6 +186,7 @@
       }).then(function (up) {
         if (up && up.error) { var c = up.error.statusCode; if (c && String(c) !== "409") throw up.error; }
         var row = { id: p.id, key: p.key, zone_id: p.zoneId, path: path, deleted: false,
+                    plate: !!p.plate,
                     device: state.sync.device, author: (state.meta.auditeur || ""),
                     updated_at: new Date(photoTime(p.id)).toISOString() };
         return sb.from("photos").upsert(row, { onConflict: "id" });
@@ -299,10 +300,10 @@
             return sb.storage.from(BUCKET).download(row.path).then(function (dl) {
               if (!dl || dl.error || !dl.data) return;
               var blob = dl.data;
-              var rec = { id: row.id, key: row.key, zoneId: row.zone_id, blob: blob, synced: true };
+              var rec = { id: row.id, key: row.key, zoneId: row.zone_id, blob: blob, plate: !!row.plate, synced: true };
               var put = (idbOK) ? Promise.resolve().then(function () { return idbPut("photos", rec); }).catch(function () {}) : Promise.resolve();
               return put.then(function () {
-                var rec2 = { id: row.id, key: row.key, zoneId: row.zone_id, blob: blob, synced: true };
+                var rec2 = { id: row.id, key: row.key, zoneId: row.zone_id, blob: blob, plate: !!row.plate, synced: true };
                 rec2.url = URL.createObjectURL(blob);
                 photos[row.id] = rec2;
                 changed = true;

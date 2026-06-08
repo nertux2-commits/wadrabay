@@ -186,6 +186,7 @@ hr.sep{border:none;border-top:1px solid #eef1f2;margin:12px 0}
 
 <input type="file" id="camInput" accept="image/*" multiple hidden>
 <input type="file" id="restoreInput" accept=".json,application/json" hidden>
+<input type="file" id="puissInput" accept=".json,application/json" hidden>
 
 <div class="viewer hidden" id="viewer">
   <div class="vtop"><button id="vClose">Fermer</button></div>
@@ -361,8 +362,8 @@ async function shrink(file){
 }
 
 /* ====================== PHOTOS ====================== */
-let photoTargetKey=null, photoTargetZone=null;
-function triggerPhoto(key,zoneId){ photoTargetKey=key;photoTargetZone=zoneId;$('camInput').click(); }
+let photoTargetKey=null, photoTargetZone=null, photoTargetPlate=false;
+function triggerPhoto(key,zoneId,plate){ photoTargetKey=key;photoTargetZone=zoneId;photoTargetPlate=!!plate;$('camInput').click(); }
 
 $('camInput').addEventListener('change', async function(){
   const files=[...this.files]; this.value='';
@@ -372,7 +373,7 @@ $('camInput').addEventListener('change', async function(){
     try{
       const blob=await shrink(f);
       const id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-      const rec={id:id,key:photoTargetKey,zoneId:photoTargetZone,blob:blob,synced:false};
+      const rec={id:id,key:photoTargetKey,zoneId:photoTargetZone,blob:blob,plate:photoTargetPlate,synced:false};
       if(idbOK){ await idbPut('photos',rec); }
       rec.url=URL.createObjectURL(blob);
       photos[id]=rec;
@@ -568,13 +569,22 @@ function eqCardHTML(z,eq){
     '<label class="fld"><span>Marque relevée (plaque)</span><input type="text" data-ef="marque" data-key="'+eq.key+'" value="'+esc(f.marque||'')+'"></label>'+
     '<label class="fld"><span>Modèle relevé (plaque)</span><input type="text" data-ef="modele" data-key="'+eq.key+'" value="'+esc(f.modele||'')+'"></label>'+
   '</div>';
-  body+='<label class="fld"><span>Puissance relevée (plaque signalétique)</span>'+
-    '<input type="text" data-ef="puissance" data-key="'+eq.key+'" placeholder="ex. 2,2 kW — 400V" value="'+esc(f.puissance||'')+'"></label>';
+  const pwAuto=!!f.pwAuto;
+  body+='<label class="fld"><span>Puissance relevée (plaque signalétique)'+
+    (pwAuto?' <span class="badge pwbadge" style="background:#fdecd2;color:#9a6516;margin:0">⚡ auto — à valider</span>':'')+'</span>'+
+    '<input type="text" data-ef="puissance" data-key="'+eq.key+'" placeholder="ex. 2,2 kW — 400V" value="'+esc(f.puissance||'')+'"'+(pwAuto?' style="border-color:#e0892a;background:#fff8ee"':'')+'></label>';
+  if(pwAuto){
+    if(f.pwNote) body+='<div class="tiny muted" style="margin:-6px 0 7px">'+esc(f.pwNote)+'</div>';
+    body+='<button class="btn sec" data-valider="'+eq.key+'" style="margin:-2px 0 11px;padding:9px">✓ Valider cette puissance</button>';
+  }
   body+='<label class="fld"><span>Observations terrain</span>'+
     '<textarea data-ef="observations" data-key="'+eq.key+'" placeholder="État, vétusté, remarques…">'+esc(f.observations||'')+'</textarea></label>';
 
-  // photos
-  body+='<div style="font-size:12.5px;font-weight:600;color:#55606b;margin:2px 0 2px">Photos</div>';
+  // photo plaque signalétique (pour calcul auto de la puissance)
+  body+='<div style="font-size:12.5px;font-weight:700;color:#9a6516;margin:6px 0 2px">⚡ Plaque signalétique <span style="font-weight:500;color:#8a949c">(pour puissance auto)</span></div>';
+  body+='<div class="photos" id="pl_'+eq.key+'"></div>';
+  // photos générales de l'équipement
+  body+='<div style="font-size:12.5px;font-weight:600;color:#55606b;margin:9px 0 2px">Photos de l\'équipement</div>';
   body+='<div class="photos" id="ph_'+eq.key+'"></div>';
 
   if(eq.isCustom){
@@ -631,6 +641,7 @@ function bindEqCards(z){
       inp.addEventListener('input',function(){
         fd(key)[this.dataset.ef]=this.value;
         if(this.dataset.ef==='local') refreshEqStatus(key);
+        if(this.dataset.ef==='puissance') fd(key).pwAuto=false;
         touch('equip:'+key);
       });
     });
@@ -650,21 +661,38 @@ function bindEqCards(z){
         delCustom(parseInt(btn.dataset.z),parseInt(btn.dataset.del));
       };
     });
+    // valider la puissance auto
+    card.querySelectorAll('[data-valider]').forEach(btn=>{
+      btn.onclick=(e)=>{e.stopPropagation();
+        const k=btn.dataset.valider;
+        if(fd(k).pwAuto){ fd(k).pwAuto=false; touch('equip:'+k); }
+        const bg=card.querySelector('.pwbadge'); if(bg) bg.remove();
+        const inp=card.querySelector('[data-ef="puissance"]'); if(inp){inp.style.borderColor='';inp.style.background='';}
+        btn.remove();
+        toast('Puissance validée');
+      };
+    });
   });
 }
 
 function renderPhotoStrip(key){
-  const box=$('ph_'+key); if(!box) return;
-  const ph=photosFor(key);
+  renderStripKind(key,true);   // plaque -> pl_
+  renderStripKind(key,false);  // équipement -> ph_
+}
+function renderStripKind(key,plate){
+  const box=$((plate?'pl_':'ph_')+key); if(!box) return;
+  const ph=photosFor(key).filter(p=>(!!p.plate)===plate);
   let h='';
   ph.forEach(p=>{
-    h+='<div class="thumb" data-pid="'+p.id+'"><img src="'+p.url+'" alt=""></div>';
+    h+='<div class="thumb" data-pid="'+p.id+'"><img src="'+p.url+'" alt="">'+
+       (plate?'<span style="position:absolute;top:2px;left:2px;background:#e0892a;color:#fff;font-size:10px;padding:0 3px;border-radius:4px">⚡</span>':'')+'</div>';
   });
-  h+='<button class="addphoto" data-add="'+key+'">'+IC.cam+'<span>AJOUTER</span></button>';
+  h+='<button class="addphoto'+(plate?'':'')+'" data-add="'+key+'" data-plate="'+(plate?1:0)+'"'+(plate?' style="border-color:#e0a64a;color:#9a6516"':'')+'>'+
+     (plate?'<span style="font-size:20px">⚡</span>':IC.cam)+'<span>'+(plate?'PLAQUE':'AJOUTER')+'</span></button>';
   box.innerHTML=h;
   box.querySelectorAll('.thumb').forEach(t=>{ t.onclick=()=>openViewer(t.dataset.pid); });
   const addBtn=box.querySelector('[data-add]');
-  if(addBtn) addBtn.onclick=()=>triggerPhoto(key, view.zoneId);
+  if(addBtn) addBtn.onclick=()=>triggerPhoto(key, view.zoneId, plate);
 }
 
 function refreshEqStatus(key){
@@ -774,7 +802,7 @@ async function doExportZone(zoneId){
       const nm=slug(eq.base.equipement);
       const list=[];
       ps.forEach((p,i)=>{
-        const fname='Z'+pad2(z.id)+'_'+code+'_'+nm+'_'+(i+1)+'.jpg';
+        const fname='Z'+pad2(z.id)+'_'+code+'_'+nm+(p.plate?'_PLAQUE':'')+'_'+(i+1)+'.jpg';
         list.push(fname); files.push({name:fname,blob:p.blob});
       });
       namesByKey[eq.key]=list;
@@ -826,6 +854,13 @@ function renderExport(){
     '<button class="btn sec" id="bkLoad">Restaurer une sauvegarde</button>'+
   '</div>';
 
+  html+='<div class="panel"><h2>⚡ Puissances auto (depuis les plaques)</h2>'+
+    '<p class="small muted" style="margin-bottom:11px">Importez le fichier de puissances calculées à partir des photos de plaques. '+
+      'Chaque valeur se place dans l\'équipement correspondant, marquée <b>« à valider »</b> — vous confirmez d\'un appui. '+
+      'N\'écrase pas les puissances déjà validées manuellement.</p>'+
+    '<button class="btn sec" id="impPuiss">Importer des puissances (.json)</button>'+
+  '</div>';
+
   html+='<div class="panel"><h2>Mode d\'emploi</h2>'+
     '<ol class="steps">'+
       '<li>Ajoutez cette page à l\'écran d\'accueil : bouton <b>Partager</b> de Safari → <b>Sur l\'écran d\'accueil</b>. Elle s\'ouvrira comme une appli, même <b>sans réseau</b>.</li>'+
@@ -845,6 +880,7 @@ function renderExport(){
   $('expZip').onclick=()=>doExport(false,true);
   $('bkSave').onclick=doBackup;
   $('bkLoad').onclick=()=>$('restoreInput').click();
+  $('impPuiss').onclick=()=>$('puissInput').click();
   $('resetAll').onclick=doReset;
   $('fab').classList.add('hidden');
 }
@@ -870,7 +906,7 @@ function buildPhotoIndex(){
       const nm=slug(eq.base.equipement);
       const list=[];
       ps.forEach((p,i)=>{
-        const fname='Z'+pad2(z.id)+'_'+code+'_'+nm+'_'+(i+1)+'.jpg';
+        const fname='Z'+pad2(z.id)+'_'+code+'_'+nm+(p.plate?'_PLAQUE':'')+'_'+(i+1)+'.jpg';
         list.push(fname);
         files.push({path:folder+'/'+fname,blob:p.blob});
       });
@@ -1005,7 +1041,7 @@ async function doBackup(){
     await persistState();
     const arr=[];
     for(const p of Object.values(photos)){
-      arr.push({id:p.id,key:p.key,zoneId:p.zoneId,data:await blobToDataURL(p.blob)});
+      arr.push({id:p.id,key:p.key,zoneId:p.zoneId,plate:!!p.plate,data:await blobToDataURL(p.blob)});
     }
     const obj={app:'WADRA-Releve-Terrain',fmt:1,ts:new Date().toISOString(),
       state:state,photos:arr};
@@ -1033,7 +1069,7 @@ $('restoreInput').addEventListener('change',async function(){
     if(idbOK){ try{await idbClear('photos');}catch(e){} }
     for(const p of (obj.photos||[])){
       const blob=dataURLtoBlob(p.data);
-      const rec={id:p.id,key:p.key,zoneId:p.zoneId,blob:blob};
+      const rec={id:p.id,key:p.key,zoneId:p.zoneId,blob:blob,plate:!!p.plate};
       if(idbOK){ try{await idbPut('photos',rec);}catch(e){} }
       rec.url=URL.createObjectURL(blob);
       photos[p.id]=rec;
@@ -1043,6 +1079,37 @@ $('restoreInput').addEventListener('change',async function(){
     toast('Sauvegarde restaurée');
     nav('home');
   }catch(e){ alert('Restauration impossible : '+e.message); }
+});
+
+/* ====================== IMPORT DES PUISSANCES (depuis traitement des plaques) ====================== */
+$('puissInput').addEventListener('change',async function(){
+  const file=this.files[0]; this.value='';
+  if(!file) return;
+  try{
+    const obj=JSON.parse(await file.text());
+    const items=Array.isArray(obj)?obj:(obj.items||[]);
+    if(!Array.isArray(items)||!items.length) throw new Error('aucune puissance dans le fichier');
+    let n=0, skip=0;
+    items.forEach(it=>{
+      if(!it||!it.key) return;
+      const f=fd(it.key);
+      // ne pas écraser une puissance déjà validée manuellement (présente et non auto)
+      if(f.puissance && !f.pwAuto){ skip++; return; }
+      if(it.puissance!=null && String(it.puissance)!==''){
+        f.puissance=String(it.puissance); f.pwAuto=true;
+        if(it.note) f.pwNote=String(it.note);
+      }
+      if(it.marque && !f.marque) f.marque=String(it.marque);
+      if(it.modele && !f.modele) f.modele=String(it.modele);
+      if(!f.statut) f.statut='ok';
+      touch('equip:'+it.key);
+      n++;
+    });
+    await persistState();
+    if(window.Sync){ if(Sync.cycle) Sync.cycle(); }
+    toast(n+' puissance(s) importée(s)'+(skip?' · '+skip+' conservée(s)':''));
+    nav('home');
+  }catch(e){ alert('Import impossible : '+e.message); }
 });
 
 async function doReset(){
@@ -1072,7 +1139,6 @@ function nav(name){
 /* ====================== DÉMARRAGE ====================== */
 async function boot(){
   idbOK=await idbOpen();
-  // charger état
   try{
     let s=null;
     if(idbOK) s=await idbGet('kv','state');
@@ -1085,7 +1151,6 @@ async function boot(){
       state.custom=state.custom||{};
     }
   }catch(e){}
-  // charger photos
   if(idbOK){
     try{
       const arr=await idbAll('photos');
