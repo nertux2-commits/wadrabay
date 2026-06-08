@@ -187,7 +187,7 @@
         return sb.storage.from(BUCKET).upload(path, p.blob, { upsert: true, contentType: "image/jpeg" });
       }).then(function (up) {
         if (up && up.error) { var c = up.error.statusCode; if (c && String(c) !== "409") throw up.error; }
-        var row = { id: p.id, key: p.key, zone_id: p.zoneId, path: path, deleted: false,
+        var row = { id: p.id, key: p.key, zone_id: (typeof p.zoneId === "number" && isFinite(p.zoneId)) ? p.zoneId : null, path: path, deleted: false,
                     plate: !!p.plate,
                     device: state.sync.device, author: (state.meta.auditeur || ""),
                     updated_at: new Date(photoTime(p.id)).toISOString() };

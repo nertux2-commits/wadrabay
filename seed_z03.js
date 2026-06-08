@@ -8,7 +8,7 @@
 window.WADRA_SEED = {
   "version": "z03-mission1-2025-05-22",
   "date": "2025-05-22T19:28:00Z",
-  "zone": "z_sg",
+  "zone": 1,
   "equip": {
     "eq_1_7": {
       "statut": "ok",
