@@ -1,8 +1,100 @@
 // WADRA Bay — Hiérarchie complète : TD → Pièce → Équipement
-// Structure complète avec tous les équipements de chaque TD
-// Auto-générée depuis les données existantes
+// TGBT séparé (accueil) + 10 TDs + données saisies du relevé v11
+// IDs de pièce uniques (corrige la navigation entre pièces).
 
 const zones = [
+  {
+    "id": "z_tgbt",
+    "name": "TGBT",
+    "fullName": "Poste HT-BT / Transformateur 630 kVA / Groupe électrogène",
+    "kVA": "630 kVA",
+    "rooms": [
+      {
+        "id": "z_tgbt_r1",
+        "name": "Tête TGBT/Source · Local groupe",
+        "equipment": [
+          {
+            "id": "eq_1_2",
+            "name": "Groupe électrogène de secours",
+            "marque": "CUMMINS",
+            "modele": "QSG12-G2",
+            "puissance": "",
+            "qte": "1",
+            "ref": "Notice complète",
+            "aVerifier": "409 kVA / 328 kW PRP — relever heures au compteur"
+          }
+        ]
+      },
+      {
+        "id": "z_tgbt_r2",
+        "name": "Tête TGBT/Source · Local poste",
+        "equipment": [
+          {
+            "id": "eq_1_6",
+            "name": "Éclairage du local poste / TGBT",
+            "marque": "",
+            "modele": "",
+            "puissance": "",
+            "qte": "1",
+            "ref": "Schéma 42C21",
+            "aVerifier": "Relever type et nombre de luminaires"
+          }
+        ]
+      },
+      {
+        "id": "z_tgbt_r3",
+        "name": "Tête TGBT/Source · Pied TGBT",
+        "equipment": [
+          {
+            "id": "eq_1_4",
+            "name": "Batterie de condensateurs 125 kvar automatique",
+            "marque": "Schneider",
+            "modele": "VarSet 125 kvar",
+            "puissance": "",
+            "qte": "1",
+            "ref": "DOE lot 13A",
+            "aVerifier": "Relever l'état (gradins, voyants)"
+          },
+          {
+            "id": "eq_1_5",
+            "name": "Batterie de condensateurs 22 kvar fixe",
+            "marque": "Schneider",
+            "modele": "VarSet 22 kvar",
+            "puissance": "",
+            "qte": "1",
+            "ref": "DOE lot 13A",
+            "aVerifier": "Relever"
+          }
+        ]
+      },
+      {
+        "id": "z_tgbt_r4",
+        "name": "Tête TGBT/Source · Poste HT-BT",
+        "equipment": [
+          {
+            "id": "eq_1_1",
+            "name": "TGBT — armoire générale BT",
+            "marque": "",
+            "modele": "",
+            "puissance": "",
+            "qte": "1",
+            "ref": "Schéma 42C20",
+            "aVerifier": "Photographier l'armoire, relever calibre du disjoncteur général"
+          },
+          {
+            "id": "eq_1_3",
+            "name": "Transformateur HT-BT",
+            "marque": "France Transfo",
+            "modele": "MINERA 630 kVA",
+            "puissance": "",
+            "qte": "1",
+            "ref": "DOE lot 13A",
+            "aVerifier": "Relever / photographier la plaque"
+          }
+        ]
+      }
+    ]
+  },
   {
     "id": "z_sg",
     "name": "TG-SG",
@@ -10,7 +102,7 @@ const zones = [
     "kVA": "200 kVA",
     "rooms": [
       {
-        "id": "z_sg_r_td-sg_·_buanderie_pe",
+        "id": "z_sg_r1",
         "name": "TD-SG · Buanderie personnel",
         "equipment": [
           {
@@ -36,7 +128,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_bureau_gouve",
+        "id": "z_sg_r2",
         "name": "TD-SG · Bureau gouvernante",
         "equipment": [
           {
@@ -82,7 +174,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_façade_bât._",
+        "id": "z_sg_r3",
         "name": "TD-SG · Façade Bât. I",
         "equipment": [
           {
@@ -98,7 +190,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_laverie",
+        "id": "z_sg_r4",
         "name": "TD-SG · Laverie",
         "equipment": [
           {
@@ -204,7 +296,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_local_cf",
+        "id": "z_sg_r5",
         "name": "TD-SG · Local CF",
         "equipment": [
           {
@@ -230,7 +322,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_local_ecs",
+        "id": "z_sg_r6",
         "name": "TD-SG · Local ECS",
         "equipment": [
           {
@@ -246,7 +338,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_repassage",
+        "id": "z_sg_r7",
         "name": "TD-SG · Repassage",
         "equipment": [
           {
@@ -282,7 +374,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_réserve",
+        "id": "z_sg_r8",
         "name": "TD-SG · Réserve",
         "equipment": [
           {
@@ -308,7 +400,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_sanitaires",
+        "id": "z_sg_r9",
         "name": "TD-SG · Sanitaires",
         "equipment": [
           {
@@ -334,7 +426,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_sanitaires_f",
+        "id": "z_sg_r10",
         "name": "TD-SG · Sanitaires F",
         "equipment": [
           {
@@ -350,7 +442,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_sanitaires_h",
+        "id": "z_sg_r11",
         "name": "TD-SG · Sanitaires H",
         "equipment": [
           {
@@ -366,7 +458,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sg_r_td-sg_·_vestiaires",
+        "id": "z_sg_r12",
         "name": "TD-SG · Vestiaires",
         "equipment": [
           {
@@ -380,90 +472,6 @@ const zones = [
             "aVerifier": "Relever"
           }
         ]
-      },
-      {
-        "id": "z_sg_r_tête_tgbt_source_·_l",
-        "name": "Tête TGBT/Source · Local groupe",
-        "equipment": [
-          {
-            "id": "eq_1_2",
-            "name": "Groupe électrogène de secours",
-            "marque": "CUMMINS",
-            "modele": "QSG12-G2",
-            "puissance": "",
-            "qte": "1",
-            "ref": "Notice complète",
-            "aVerifier": "409 kVA / 328 kW PRP — relever heures au compteur"
-          }
-        ]
-      },
-      {
-        "id": "z_sg_r_tête_tgbt_source_·_l",
-        "name": "Tête TGBT/Source · Local poste",
-        "equipment": [
-          {
-            "id": "eq_1_6",
-            "name": "Éclairage du local poste / TGBT",
-            "marque": "",
-            "modele": "",
-            "puissance": "",
-            "qte": "1",
-            "ref": "Schéma 42C21",
-            "aVerifier": "Relever type et nombre de luminaires"
-          }
-        ]
-      },
-      {
-        "id": "z_sg_r_tête_tgbt_source_·_p",
-        "name": "Tête TGBT/Source · Pied TGBT",
-        "equipment": [
-          {
-            "id": "eq_1_4",
-            "name": "Batterie de condensateurs 125 kvar automatique",
-            "marque": "Schneider",
-            "modele": "VarSet 125 kvar",
-            "puissance": "",
-            "qte": "1",
-            "ref": "DOE lot 13A",
-            "aVerifier": "Relever l'état (gradins, voyants)"
-          },
-          {
-            "id": "eq_1_5",
-            "name": "Batterie de condensateurs 22 kvar fixe",
-            "marque": "Schneider",
-            "modele": "VarSet 22 kvar",
-            "puissance": "",
-            "qte": "1",
-            "ref": "DOE lot 13A",
-            "aVerifier": "Relever"
-          }
-        ]
-      },
-      {
-        "id": "z_sg_r_tête_tgbt_source_·_p",
-        "name": "Tête TGBT/Source · Poste HT-BT",
-        "equipment": [
-          {
-            "id": "eq_1_1",
-            "name": "TGBT — armoire générale BT",
-            "marque": "",
-            "modele": "",
-            "puissance": "",
-            "qte": "1",
-            "ref": "Schéma 42C20",
-            "aVerifier": "Photographier l'armoire, relever calibre du disjoncteur général"
-          },
-          {
-            "id": "eq_1_3",
-            "name": "Transformateur HT-BT",
-            "marque": "France Transfo",
-            "modele": "MINERA 630 kVA",
-            "puissance": "",
-            "qte": "1",
-            "ref": "DOE lot 13A",
-            "aVerifier": "Relever / photographier la plaque"
-          }
-        ]
       }
     ]
   },
@@ -474,7 +482,7 @@ const zones = [
     "kVA": "110.9 kVA",
     "rooms": [
       {
-        "id": "z_c_r_lt-piscine_·_lt-pisc",
+        "id": "z_c_r1",
         "name": "LT-PISCINE · LT-Piscine",
         "equipment": [
           {
@@ -580,7 +588,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-accueil_·_accueil",
+        "id": "z_c_r2",
         "name": "TD-ACCUEIL · Accueil",
         "equipment": [
           {
@@ -626,7 +634,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-admin_·_bureaux_a",
+        "id": "z_c_r3",
         "name": "TD-ADMIN · Bureaux admin",
         "equipment": [
           {
@@ -672,7 +680,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-admin_·_local_ser",
+        "id": "z_c_r4",
         "name": "TD-ADMIN · Local serveur",
         "equipment": [
           {
@@ -698,7 +706,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-admin_·_local_tec",
+        "id": "z_c_r5",
         "name": "TD-ADMIN · Local technique",
         "equipment": [
           {
@@ -714,7 +722,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_cafétér",
+        "id": "z_c_r6",
         "name": "TD-Cuisine · Cafétéria",
         "equipment": [
           {
@@ -760,7 +768,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_cuisine",
+        "id": "z_c_r7",
         "name": "TD-Cuisine · Cuisine",
         "equipment": [
           {
@@ -776,7 +784,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_cuisine",
+        "id": "z_c_r8",
         "name": "TD-Cuisine · Cuisine (toutes zones)",
         "equipment": [
           {
@@ -792,7 +800,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_cuisine",
+        "id": "z_c_r9",
         "name": "TD-Cuisine · Cuisine / Cafétéria",
         "equipment": [
           {
@@ -808,7 +816,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_cuisine",
+        "id": "z_c_r10",
         "name": "TD-Cuisine · Cuisine / Garde manger / Cafét.",
         "equipment": [
           {
@@ -824,7 +832,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_cuisine",
+        "id": "z_c_r11",
         "name": "TD-Cuisine · Cuisine principale",
         "equipment": [
           {
@@ -960,7 +968,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_garde_m",
+        "id": "z_c_r12",
         "name": "TD-Cuisine · Garde manger",
         "equipment": [
           {
@@ -1016,7 +1024,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_local_c",
+        "id": "z_c_r13",
         "name": "TD-Cuisine · Local CF",
         "equipment": [
           {
@@ -1042,7 +1050,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_légumer",
+        "id": "z_c_r14",
         "name": "TD-Cuisine · Légumerie",
         "equipment": [
           {
@@ -1068,7 +1076,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_plonge",
+        "id": "z_c_r15",
         "name": "TD-Cuisine · Plonge",
         "equipment": [
           {
@@ -1084,7 +1092,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_pâtisse",
+        "id": "z_c_r16",
         "name": "TD-Cuisine · Pâtisserie",
         "equipment": [
           {
@@ -1170,7 +1178,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_zone_cu",
+        "id": "z_c_r17",
         "name": "TD-Cuisine · Zone cuisson",
         "equipment": [
           {
@@ -1186,7 +1194,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-cuisine_·_zone_dé",
+        "id": "z_c_r18",
         "name": "TD-Cuisine · Zone déboitage",
         "equipment": [
           {
@@ -1212,7 +1220,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-fare-bar_·_bar",
+        "id": "z_c_r19",
         "name": "TD-FARE-BAR · Bar",
         "equipment": [
           {
@@ -1358,7 +1366,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-restaurant_·_rest",
+        "id": "z_c_r20",
         "name": "TD-RESTAURANT · Restaurant",
         "equipment": [
           {
@@ -1394,7 +1402,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_td-sanitaires_·_loca",
+        "id": "z_c_r21",
         "name": "TD-SANITAIRES · Local sanitaires",
         "equipment": [
           {
@@ -1450,7 +1458,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_éclairage_extérieur_",
+        "id": "z_c_r22",
         "name": "Éclairage extérieur & VRD (départ aval TG-C) · Accès site",
         "equipment": [
           {
@@ -1466,7 +1474,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_éclairage_extérieur_",
+        "id": "z_c_r23",
         "name": "Éclairage extérieur & VRD (départ aval TG-C) · Local technique extérieur",
         "equipment": [
           {
@@ -1482,7 +1490,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_éclairage_extérieur_",
+        "id": "z_c_r24",
         "name": "Éclairage extérieur & VRD (départ aval TG-C) · Parking",
         "equipment": [
           {
@@ -1498,7 +1506,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_éclairage_extérieur_",
+        "id": "z_c_r25",
         "name": "Éclairage extérieur & VRD (départ aval TG-C) · Tout le site",
         "equipment": [
           {
@@ -1524,7 +1532,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_c_r_éclairage_extérieur_",
+        "id": "z_c_r26",
         "name": "Éclairage extérieur & VRD (départ aval TG-C) · Voiries / espaces verts",
         "equipment": [
           {
@@ -1548,7 +1556,7 @@ const zones = [
     "kVA": "130 kVA",
     "rooms": [
       {
-        "id": "z_lt1_r_td-lt2_·_thq-lt2_·_l",
+        "id": "z_lt1_r1",
         "name": "TD-LT2 · THQ-LT2 · Local technique 2",
         "equipment": [
           {
@@ -1564,7 +1572,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt2_·_tt-lag_—_bu",
+        "id": "z_lt1_r2",
         "name": "TD-LT2 · TT-LAG — Bungalows Lagune · Bungalow",
         "equipment": [
           {
@@ -1640,7 +1648,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt2_·_tt-lag_—_bu",
+        "id": "z_lt1_r3",
         "name": "TD-LT2 · TT-LAG — Bungalows Lagune · Bungalow + terrasse",
         "equipment": [
           {
@@ -1656,7 +1664,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt2_·_tt-lag_—_bu",
+        "id": "z_lt1_r4",
         "name": "TD-LT2 · TT-LAG — Bungalows Lagune · Sous-bassement bungalow",
         "equipment": [
           {
@@ -1672,7 +1680,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt2_·_tt-lag_—_bu",
+        "id": "z_lt1_r5",
         "name": "TD-LT2 · TT-LAG — Bungalows Lagune · Terrasse",
         "equipment": [
           {
@@ -1688,7 +1696,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_thq-lt3_·_l",
+        "id": "z_lt1_r6",
         "name": "TD-LT3 · THQ-LT3 · Local technique 3",
         "equipment": [
           {
@@ -1704,7 +1712,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-lag_—_bu",
+        "id": "z_lt1_r7",
         "name": "TD-LT3 · TT-LAG — Bungalows Lagune · Bungalow",
         "equipment": [
           {
@@ -1780,7 +1788,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-lag_—_bu",
+        "id": "z_lt1_r8",
         "name": "TD-LT3 · TT-LAG — Bungalows Lagune · Bungalow + terrasse",
         "equipment": [
           {
@@ -1796,7 +1804,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-lag_—_bu",
+        "id": "z_lt1_r9",
         "name": "TD-LT3 · TT-LAG — Bungalows Lagune · Sous-bassement bungalow",
         "equipment": [
           {
@@ -1812,7 +1820,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-lag_—_bu",
+        "id": "z_lt1_r10",
         "name": "TD-LT3 · TT-LAG — Bungalows Lagune · Terrasse",
         "equipment": [
           {
@@ -1828,7 +1836,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-lingerie",
+        "id": "z_lt1_r11",
         "name": "TD-LT3 · TT-Lingerie3 — Lingerie LT3 · Lingerie LT3",
         "equipment": [
           {
@@ -1864,7 +1872,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-seafood_",
+        "id": "z_lt1_r12",
         "name": "TD-LT3 · TT-SEAFOOD — Restaurant Sea Food · Cuisine Sea Food",
         "equipment": [
           {
@@ -1900,7 +1908,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-seafood_",
+        "id": "z_lt1_r13",
         "name": "TD-LT3 · TT-SEAFOOD — Restaurant Sea Food · Office",
         "equipment": [
           {
@@ -1916,7 +1924,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-seafood_",
+        "id": "z_lt1_r14",
         "name": "TD-LT3 · TT-SEAFOOD — Restaurant Sea Food · Office SF",
         "equipment": [
           {
@@ -1932,7 +1940,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-seafood_",
+        "id": "z_lt1_r15",
         "name": "TD-LT3 · TT-SEAFOOD — Restaurant Sea Food · Sea Food",
         "equipment": [
           {
@@ -1988,7 +1996,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-spa_—_sp",
+        "id": "z_lt1_r16",
         "name": "TD-LT3 · TT-SPA — SPA / Fitness · Local technique SPA",
         "equipment": [
           {
@@ -2004,7 +2012,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-spa_—_sp",
+        "id": "z_lt1_r17",
         "name": "TD-LT3 · TT-SPA — SPA / Fitness · SPA",
         "equipment": [
           {
@@ -2060,7 +2068,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-spa_—_sp",
+        "id": "z_lt1_r18",
         "name": "TD-LT3 · TT-SPA — SPA / Fitness · SPA / fitness",
         "equipment": [
           {
@@ -2076,7 +2084,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-spa_—_sp",
+        "id": "z_lt1_r19",
         "name": "TD-LT3 · TT-SPA — SPA / Fitness · SPA / salle fitness",
         "equipment": [
           {
@@ -2092,7 +2100,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_td-lt3_·_tt-spa_—_sp",
+        "id": "z_lt1_r20",
         "name": "TD-LT3 · TT-SPA — SPA / Fitness · Salle fitness",
         "equipment": [
           {
@@ -2118,7 +2126,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_thq-lt1_—_tableau_éc",
+        "id": "z_lt1_r21",
         "name": "THQ-LT1 — Tableau éclairage / prises communs LT1 · Local technique 1",
         "equipment": [
           {
@@ -2134,7 +2142,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_tt-lag_—_bungalows_l",
+        "id": "z_lt1_r22",
         "name": "TT-LAG — Bungalows Lagune · Bungalow",
         "equipment": [
           {
@@ -2210,7 +2218,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_tt-lag_—_bungalows_l",
+        "id": "z_lt1_r23",
         "name": "TT-LAG — Bungalows Lagune · Bungalow + terrasse",
         "equipment": [
           {
@@ -2226,7 +2234,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_tt-lag_—_bungalows_l",
+        "id": "z_lt1_r24",
         "name": "TT-LAG — Bungalows Lagune · Sous-bassement bungalow",
         "equipment": [
           {
@@ -2242,7 +2250,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_tt-lag_—_bungalows_l",
+        "id": "z_lt1_r25",
         "name": "TT-LAG — Bungalows Lagune · Terrasse",
         "equipment": [
           {
@@ -2258,7 +2266,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt1_r_tt-lingerie_—_linger",
+        "id": "z_lt1_r26",
         "name": "TT-Lingerie — Lingerie LT1 · Lingerie LT1",
         "equipment": [
           {
@@ -2302,7 +2310,7 @@ const zones = [
     "kVA": "130 kVA",
     "rooms": [
       {
-        "id": "z_lt4_r_chambres_rs_(à_confi",
+        "id": "z_lt4_r1",
         "name": "Chambres RS (à confirmer) · Bâtiment chambres RS · Cage d'ascenseur",
         "equipment": [
           {
@@ -2318,7 +2326,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_chambres_rs_(à_confi",
+        "id": "z_lt4_r2",
         "name": "Chambres RS (à confirmer) · Bâtiment chambres RS · Chambres",
         "equipment": [
           {
@@ -2354,7 +2362,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_chambres_rs_(à_confi",
+        "id": "z_lt4_r3",
         "name": "Chambres RS (à confirmer) · Bâtiment chambres RS · Chambres + circulations",
         "equipment": [
           {
@@ -2380,7 +2388,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_chambres_rs_(à_confi",
+        "id": "z_lt4_r4",
         "name": "Chambres RS (à confirmer) · Bâtiment chambres RS · Gaines / toiture",
         "equipment": [
           {
@@ -2396,7 +2404,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_chambres_rs_(à_confi",
+        "id": "z_lt4_r5",
         "name": "Chambres RS (à confirmer) · Bâtiment chambres RS · Local buanderie d'étage",
         "equipment": [
           {
@@ -2412,7 +2420,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_chambres_rs_(à_confi",
+        "id": "z_lt4_r6",
         "name": "Chambres RS (à confirmer) · Bâtiment chambres RS · Terrasses chambres",
         "equipment": [
           {
@@ -2428,7 +2436,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_td-lt5_·_thq-lt5_·_l",
+        "id": "z_lt4_r7",
         "name": "TD-LT5 · THQ-LT5 · Local technique 5",
         "equipment": [
           {
@@ -2444,7 +2452,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_td-lt5_·_tt-pl_—_bun",
+        "id": "z_lt4_r8",
         "name": "TD-LT5 · TT-PL — Bungalows Plage · Bungalow",
         "equipment": [
           {
@@ -2510,7 +2518,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_td-lt5_·_tt-pl_—_bun",
+        "id": "z_lt4_r9",
         "name": "TD-LT5 · TT-PL — Bungalows Plage · Bungalow + terrasse",
         "equipment": [
           {
@@ -2526,7 +2534,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_td-lt5_·_tt-pl_—_bun",
+        "id": "z_lt4_r10",
         "name": "TD-LT5 · TT-PL — Bungalows Plage · Sous-bassement bungalow",
         "equipment": [
           {
@@ -2542,7 +2550,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_td-lt5_·_tt-pl_—_bun",
+        "id": "z_lt4_r11",
         "name": "TD-LT5 · TT-PL — Bungalows Plage · Terrasse",
         "equipment": [
           {
@@ -2558,7 +2566,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_thq-lt4_·_local_tech",
+        "id": "z_lt4_r12",
         "name": "THQ-LT4 · Local technique 4",
         "equipment": [
           {
@@ -2574,7 +2582,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-buand-n_—_buander",
+        "id": "z_lt4_r13",
         "name": "TT-BUAND-N — Buanderie d'étage bât. N · Buanderie N",
         "equipment": [
           {
@@ -2590,7 +2598,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-buand-o_—_buander",
+        "id": "z_lt4_r14",
         "name": "TT-BUAND-O — Buanderie d'étage bât. O · Buanderie O",
         "equipment": [
           {
@@ -2606,7 +2614,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-ch_—_chambres_·_c",
+        "id": "z_lt4_r15",
         "name": "TT-CH — Chambres · Cage d'ascenseur",
         "equipment": [
           {
@@ -2632,7 +2640,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-ch_—_chambres_·_c",
+        "id": "z_lt4_r16",
         "name": "TT-CH — Chambres · Chambres",
         "equipment": [
           {
@@ -2718,7 +2726,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-ch_—_chambres_·_c",
+        "id": "z_lt4_r17",
         "name": "TT-CH — Chambres · Chambres + circulations",
         "equipment": [
           {
@@ -2764,7 +2772,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-ch_—_chambres_·_g",
+        "id": "z_lt4_r18",
         "name": "TT-CH — Chambres · Gaines / toiture",
         "equipment": [
           {
@@ -2790,7 +2798,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-ch_—_chambres_·_l",
+        "id": "z_lt4_r19",
         "name": "TT-CH — Chambres · Local buanderie d'étage",
         "equipment": [
           {
@@ -2816,7 +2824,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-ch_—_chambres_·_t",
+        "id": "z_lt4_r20",
         "name": "TT-CH — Chambres · Terrasses chambres",
         "equipment": [
           {
@@ -2842,7 +2850,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-for_—_bungalows_f",
+        "id": "z_lt4_r21",
         "name": "TT-FOR — Bungalows Forêt · Bungalow",
         "equipment": [
           {
@@ -2908,7 +2916,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-for_—_bungalows_f",
+        "id": "z_lt4_r22",
         "name": "TT-FOR — Bungalows Forêt · Bungalow + terrasse",
         "equipment": [
           {
@@ -2924,7 +2932,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-for_—_bungalows_f",
+        "id": "z_lt4_r23",
         "name": "TT-FOR — Bungalows Forêt · Sous-bassement bungalow",
         "equipment": [
           {
@@ -2940,7 +2948,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt4_r_tt-for_—_bungalows_f",
+        "id": "z_lt4_r24",
         "name": "TT-FOR — Bungalows Forêt · Terrasse",
         "equipment": [
           {
@@ -2964,7 +2972,7 @@ const zones = [
     "kVA": "30 kVA",
     "rooms": [
       {
-        "id": "z_lt6_r_thq-lt6_·_local_tech",
+        "id": "z_lt6_r1",
         "name": "THQ-LT6 · Local technique 6",
         "equipment": [
           {
@@ -2980,7 +2988,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt6_r_tt-lag_—_bungalows_l",
+        "id": "z_lt6_r2",
         "name": "TT-LAG — Bungalows Lagune · Bungalow",
         "equipment": [
           {
@@ -3056,7 +3064,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt6_r_tt-lag_—_bungalows_l",
+        "id": "z_lt6_r3",
         "name": "TT-LAG — Bungalows Lagune · Bungalow + terrasse",
         "equipment": [
           {
@@ -3072,7 +3080,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt6_r_tt-lag_—_bungalows_l",
+        "id": "z_lt6_r4",
         "name": "TT-LAG — Bungalows Lagune · Sous-bassement bungalow",
         "equipment": [
           {
@@ -3088,7 +3096,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt6_r_tt-lag_—_bungalows_l",
+        "id": "z_lt6_r5",
         "name": "TT-LAG — Bungalows Lagune · Terrasse",
         "equipment": [
           {
@@ -3104,7 +3112,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt6_r_tt-lingerie2_—_linge",
+        "id": "z_lt6_r6",
         "name": "TT-Lingerie2 — Lingerie LT6 · Lingerie LT6",
         "equipment": [
           {
@@ -3148,7 +3156,7 @@ const zones = [
     "kVA": "70 kVA",
     "rooms": [
       {
-        "id": "z_lt7_r_logements_du_personn",
+        "id": "z_lt7_r1",
         "name": "Logements du personnel · Logements",
         "equipment": [
           {
@@ -3164,7 +3172,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt7_r_logements_du_personn",
+        "id": "z_lt7_r2",
         "name": "Logements du personnel · Logements F1/F2/F4",
         "equipment": [
           {
@@ -3180,7 +3188,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt7_r_logements_du_personn",
+        "id": "z_lt7_r3",
         "name": "Logements du personnel · Logements personnel",
         "equipment": [
           {
@@ -3216,7 +3224,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_lt7_r_thq-lt7_·_local_tech",
+        "id": "z_lt7_r4",
         "name": "THQ-LT7 · Local technique 7",
         "equipment": [
           {
@@ -3240,7 +3248,7 @@ const zones = [
     "kVA": "27.7 kVA",
     "rooms": [
       {
-        "id": "z_atelier_r_atelier",
+        "id": "z_atelier_r1",
         "name": "Atelier",
         "equipment": [
           {
@@ -3274,7 +3282,7 @@ const zones = [
     "kVA": "43.7 kVA",
     "rooms": [
       {
-        "id": "z_sp_r_grande_salle_·_grand",
+        "id": "z_sp_r1",
         "name": "Grande salle · Grande salle",
         "equipment": [
           {
@@ -3320,7 +3328,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_lagunarium_·_lt-lagu",
+        "id": "z_sp_r2",
         "name": "LAGUNARIUM · LT-Lagunarium",
         "equipment": [
           {
@@ -3386,7 +3394,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_lagunarium_·_local_l",
+        "id": "z_sp_r3",
         "name": "LAGUNARIUM · Local Lagunarium",
         "equipment": [
           {
@@ -3402,7 +3410,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_office_·_office",
+        "id": "z_sp_r4",
         "name": "Office · Office",
         "equipment": [
           {
@@ -3418,7 +3426,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_salle_de_rangement_·",
+        "id": "z_sp_r5",
         "name": "Salle de rangement · Salle rangement",
         "equipment": [
           {
@@ -3434,7 +3442,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_sanitaires_·_sanitai",
+        "id": "z_sp_r6",
         "name": "Sanitaires · Sanitaire F",
         "equipment": [
           {
@@ -3450,7 +3458,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_sanitaires_·_sanitai",
+        "id": "z_sp_r7",
         "name": "Sanitaires · Sanitaire H",
         "equipment": [
           {
@@ -3466,7 +3474,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_sanitaires_·_sanitai",
+        "id": "z_sp_r8",
         "name": "Sanitaires · Sanitaires",
         "equipment": [
           {
@@ -3482,7 +3490,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_sp_r_sanitaires_·_wc_pmr",
+        "id": "z_sp_r9",
         "name": "Sanitaires · WC PMR",
         "equipment": [
           {
@@ -3506,7 +3514,7 @@ const zones = [
     "kVA": "22.2 kVA",
     "rooms": [
       {
-        "id": "z_step_r_bassin_relevage_entr",
+        "id": "z_step_r1",
         "name": "Bassin relevage entrée",
         "equipment": [
           {
@@ -3522,7 +3530,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_step_r_entrée_step",
+        "id": "z_step_r2",
         "name": "Entrée STEP",
         "equipment": [
           {
@@ -3538,7 +3546,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_step_r_local_step",
+        "id": "z_step_r3",
         "name": "Local STEP",
         "equipment": [
           {
@@ -3554,7 +3562,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_step_r_réseau",
+        "id": "z_step_r4",
         "name": "Réseau",
         "equipment": [
           {
@@ -3570,7 +3578,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_step_r_step",
+        "id": "z_step_r5",
         "name": "STEP",
         "equipment": [
           {
@@ -3694,7 +3702,7 @@ const zones = [
     "kVA": "20.4 kVA",
     "rooms": [
       {
-        "id": "z_pomperie_r_local_di",
+        "id": "z_pomperie_r1",
         "name": "Local DI",
         "equipment": [
           {
@@ -3730,7 +3738,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_pomperie_r_local_pomperie",
+        "id": "z_pomperie_r2",
         "name": "Local Pomperie",
         "equipment": [
           {
@@ -3746,7 +3754,7 @@ const zones = [
         ]
       },
       {
-        "id": "z_pomperie_r_pomperie",
+        "id": "z_pomperie_r3",
         "name": "Pomperie",
         "equipment": [
           {
