@@ -452,9 +452,11 @@ function moveEquipStruct(equipId, roomId){ const S=ensureStruct(); S.equip[equip
 function deleteEquipStruct(equipId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {del:true}); structDirty(); }
 
 /* ====================== FEUILLE D'ACTION (modale, remplace prompt/confirm) ====================== */
-function closeSheet(){ const s=$('sheet'); if(!s) return; s.classList.remove('show'); setTimeout(()=>{ s.classList.add('hidden'); s.innerHTML=''; }, 170); }
+let sheetCloseTimer = null;
+function closeSheet(){ const s=$('sheet'); if(!s) return; s.classList.remove('show'); clearTimeout(sheetCloseTimer); sheetCloseTimer = setTimeout(()=>{ s.classList.add('hidden'); s.innerHTML=''; }, 170); }
 function openSheet(inner){
   const s=$('sheet');
+  clearTimeout(sheetCloseTimer); // évite que la fermeture précédente n'efface cette nouvelle feuille
   s.innerHTML = '<div class="sheet" onclick="event.stopPropagation()">' + inner + '</div>';
   s.classList.remove('hidden');
   requestAnimationFrame(() => s.classList.add('show'));
