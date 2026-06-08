@@ -37,6 +37,7 @@
     state.photoDel = state.photoDel || {};   // photoId -> {key, done}
     state.zones = state.zones || {};      // entrées "zone:" reçues de la base partagée
     state.custom = state.custom || {};    // équipements ajoutés sur le terrain (par zone)
+    state.struct = state.struct || {};    // modifications de structure (pièces/équip. ajout/déplacement/renommage/suppression)
     state.sync = state.sync || {};
     if (!state.sync.device) state.sync.device = "dev_" + Math.random().toString(36).slice(2, 9);
     state.sync.entriesPull = state.sync.entriesPull || "1970-01-01T00:00:00Z";
@@ -142,6 +143,7 @@
     var row = { id: id, updated_at: ts, device: state.sync.device,
                 author: (state.meta.auditeur || ""), deleted: false, body: {} };
     if (id === "meta") { row.type = "meta"; row.body = { auditeur: state.meta.auditeur || "" }; return row; }
+    if (id === "struct") { row.type = "struct"; row.body = state.struct || {}; return row; }
     if (id.indexOf("zone:") === 0) { row.type = "zone"; row.body = state.zones[id.slice(5)] || {}; return row; }
     if (id.indexOf("equip:") === 0) { row.type = "equip"; row.body = state.equip[id.slice(6)] || {}; return row; }
     if (id.indexOf("custom:") === 0) {
@@ -232,6 +234,7 @@
       if (row.body && typeof row.body.auditeur === "string") state.meta.auditeur = row.body.auditeur;
       return;
     }
+    if (row.type === "struct") { if (row.body) state.struct = row.body; return; }
     if (row.type === "zone") { state.zones[row.id.slice(5)] = row.body || {}; return; }
     if (row.type === "equip") {
       var k = row.id.slice(6);

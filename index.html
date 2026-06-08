@@ -108,6 +108,34 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 
 .consigne{background:#fff7e8;border:1px solid #f0dcb0;border-radius:9px;padding:8px 10px;
   margin:9px 0;font-size:12.8px;color:#7a5a14}
+
+/* ---- Bouton d'action sur une ligne ---- */
+.rowact{flex:none;width:32px;height:32px;border-radius:9px;background:#f0f3f4;color:#55606b;
+  display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;line-height:1}
+.rowact:active{background:#e2e6e9}
+
+/* ---- Feuille d'action (modale bas d'écran) ---- */
+.ovl{position:fixed;inset:0;z-index:420;background:rgba(10,20,25,.45);
+  display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .17s}
+.ovl.show{opacity:1}
+.ovl .sheet{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;
+  padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);box-shadow:0 -4px 24px rgba(0,0,0,.2);
+  transform:translateY(14px);transition:transform .17s}
+.ovl.show .sheet{transform:none}
+.ovl .sheet h3{font-size:16.5px;font-weight:700;margin-bottom:9px}
+.ovl .sheet .sub{font-size:13px;color:#6b7785;margin:-4px 0 12px;line-height:1.4}
+.ovl .sheet input{width:100%;border:1.4px solid #d6dbde;border-radius:10px;padding:12px;
+  background:#fafbfb;color:#1a2025;margin-bottom:12px}
+.ovl .sheet input:focus{outline:none;border-color:#0d7a6f;background:#fff}
+.ovl .sheet .opt{display:flex;align-items:center;gap:9px;padding:14px 13px;border-radius:11px;
+  background:#f4f6f6;margin-bottom:8px;font-weight:600;font-size:14.5px}
+.ovl .sheet .opt:active{background:#e7ebec}
+.ovl .sheet .opt.danger{color:#c0392b}
+.ovl .sheet .sbtns{display:flex;gap:9px;margin-top:4px}
+.ovl .sheet .sbtns button{flex:1;padding:13px;border-radius:11px;font-weight:700;font-size:15px}
+.ovl .sheet .sbtn-ok{background:#0d7a6f;color:#fff}
+.ovl .sheet .sbtn-cancel{background:#eef1f2;color:#1a2025;border:1.4px solid #d6dbde}
+.ovl .sheet .sbtn-danger{background:#c0392b;color:#fff}
 </style>
 </head>
 <body>
@@ -123,6 +151,7 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
   <div class="vbot"><button id="vDel">Supprimer cette photo</button></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="ovl hidden" id="sheet"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -252,7 +281,8 @@ function toast(msg){
   t._t = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-function findZone(zoneId){ return zones.find(z => z.id === zoneId); }
+let TREE = [];
+function findZone(zoneId){ return TREE.find(z => z.id === zoneId); }
 function findRoom(zoneId, roomId){
   const z = findZone(zoneId);
   if(!z) return null;
@@ -339,14 +369,164 @@ $('vClose').onclick = () => {
   viewerCurrent = null;
 };
 
-$('vDel').onclick = async () => {
-  if(viewerCurrent && confirm('Supprimer cette photo ?')){
-    await deletePhoto(viewerCurrent);
+$('vDel').onclick = () => {
+  if(!viewerCurrent) return;
+  const id = viewerCurrent;
+  sheetConfirm('Supprimer cette photo ?', '', 'Supprimer', true, async () => {
+    await deletePhoto(id);
     $('viewer').classList.add('hidden');
     $('vImg').src = '';
     viewerCurrent = null;
-  }
+  });
 };
+
+/* ====================== ARBRE EFFECTIF (catalogue + modifications) ====================== */
+function ensureStruct(){
+  state.struct = state.struct || {};
+  const S = state.struct;
+  S.rooms = S.rooms || {};          // override pièce : {name?, zone?, del?}
+  S.equip = S.equip || {};          // override équip. : {room?, del?}
+  S.addedRooms = S.addedRooms || []; // [{id, zone, name}]
+  S.addedEquip = S.addedEquip || []; // [{id, room, name}]
+  return S;
+}
+function buildTree(){
+  const S = ensureStruct(), RO = S.rooms, EO = S.equip;
+  const zlist = zones.map(z => ({id:z.id, name:z.name, fullName:z.fullName, kVA:z.kVA, rooms:[]}));
+  const zById = {}; zlist.forEach(z => zById[z.id] = z);
+  const roomBase = {};
+  zones.forEach(z => z.rooms.forEach(r => { roomBase[r.id] = {name:r.name, zone:z.id, custom:false}; }));
+  S.addedRooms.forEach(ar => { roomBase[ar.id] = {name:ar.name, zone:ar.zone, custom:true}; });
+  const eff = {};
+  Object.keys(roomBase).forEach(rid => {
+    const ov = RO[rid] || {};
+    if(ov.del) return;
+    const b = roomBase[rid];
+    let zone = ov.zone || b.zone;
+    if(!zById[zone]) zone = b.zone;
+    eff[rid] = {id:rid, name:(ov.name != null ? ov.name : b.name), zone:zone, equipment:[], custom:b.custom};
+  });
+  zones.forEach(z => z.rooms.forEach(r => r.equipment.forEach(e => {
+    const ov = EO[e.id] || {};
+    if(ov.del) return;
+    let rid = ov.room || r.id;
+    if(!eff[rid]) rid = eff[r.id] ? r.id : null;
+    if(rid && eff[rid]) eff[rid].equipment.push(e);
+  })));
+  S.addedEquip.forEach(ae => {
+    const ov = EO[ae.id] || {};
+    if(ov.del) return;
+    const rid = ov.room || ae.room;
+    if(rid && eff[rid]) eff[rid].equipment.push({id:ae.id, name:ae.name, custom:true});
+  });
+  const ordered = [];
+  zones.forEach(z => z.rooms.forEach(r => ordered.push(r.id)));
+  S.addedRooms.forEach(ar => ordered.push(ar.id));
+  ordered.forEach(rid => { const er = eff[rid]; if(er && zById[er.zone]) zById[er.zone].rooms.push(er); });
+  return zlist;
+}
+function rebuildTree(){ TREE = buildTree(); }
+
+/* ---- mutations de structure (persistées + synchronisées) ---- */
+function structDirty(){
+  state.ts = state.ts || {};
+  state.dirty = state.dirty || {};
+  state.ts['struct'] = new Date().toISOString();
+  state.dirty['struct'] = 1;
+  scheduleSave();
+  if(window.Sync && window.Sync.kick){ try { window.Sync.kick(); } catch(e){} }
+}
+function rndId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function addRoomStruct(zoneId, name){ ensureStruct().addedRooms.push({id:'r_'+rndId(), zone:zoneId, name:name}); structDirty(); }
+function renameRoomStruct(roomId, name){ const S=ensureStruct(); S.rooms[roomId]=Object.assign({}, S.rooms[roomId], {name:name}); structDirty(); }
+function moveRoomStruct(roomId, zoneId){ const S=ensureStruct(); S.rooms[roomId]=Object.assign({}, S.rooms[roomId], {zone:zoneId}); structDirty(); }
+function deleteRoomStruct(roomId){
+  const S=ensureStruct();
+  const r = findRoom(view.tdId, roomId);
+  if(r){ r.equipment.forEach(e => { S.equip[e.id]=Object.assign({}, S.equip[e.id], {del:true}); }); }
+  S.rooms[roomId]=Object.assign({}, S.rooms[roomId], {del:true});
+  structDirty();
+}
+function addEquipStruct(roomId, name){ const S=ensureStruct(); const id='e_'+rndId(); S.addedEquip.push({id:id, room:roomId, name:name}); state.equip[id]=state.equip[id]||{}; structDirty(); }
+function moveEquipStruct(equipId, roomId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {room:roomId}); structDirty(); }
+function deleteEquipStruct(equipId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {del:true}); structDirty(); }
+
+/* ====================== FEUILLE D'ACTION (modale, remplace prompt/confirm) ====================== */
+function closeSheet(){ const s=$('sheet'); if(!s) return; s.classList.remove('show'); setTimeout(()=>{ s.classList.add('hidden'); s.innerHTML=''; }, 170); }
+function openSheet(inner){
+  const s=$('sheet');
+  s.innerHTML = '<div class="sheet" onclick="event.stopPropagation()">' + inner + '</div>';
+  s.classList.remove('hidden');
+  requestAnimationFrame(() => s.classList.add('show'));
+  s.onclick = () => closeSheet();
+}
+function sheetInput(title, sub, value, okLabel, cb){
+  openSheet('<h3>'+esc(title)+'</h3>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+
+    '<input id="shIn" type="text" placeholder="Nom" value="'+esc(value||'')+'">'+
+    '<div class="sbtns"><button class="sbtn-cancel" id="shCancel">Annuler</button><button class="sbtn-ok" id="shOk">'+esc(okLabel||'OK')+'</button></div>');
+  const inp=$('shIn');
+  setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 60);
+  const go=()=>{ const v=inp.value.trim(); if(!v){ inp.focus(); return; } closeSheet(); cb(v); };
+  $('shCancel').onclick=closeSheet; $('shOk').onclick=go;
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+}
+function sheetConfirm(title, message, okLabel, danger, cb){
+  openSheet('<h3>'+esc(title)+'</h3>'+(message?'<div class="sub">'+esc(message)+'</div>':'')+
+    '<div class="sbtns"><button class="sbtn-cancel" id="shCancel">Annuler</button><button class="'+(danger?'sbtn-danger':'sbtn-ok')+'" id="shOk">'+esc(okLabel||'OK')+'</button></div>');
+  $('shCancel').onclick=closeSheet; $('shOk').onclick=()=>{ closeSheet(); cb(); };
+}
+function sheetChoose(title, sub, options, cb){
+  let h='<h3>'+esc(title)+'</h3>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'<div style="max-height:46vh;overflow:auto;margin-bottom:6px">';
+  options.forEach((o,i)=>{ h+='<div class="opt" data-i="'+i+'">'+esc(o.label)+'</div>'; });
+  h+='</div><div class="sbtns"><button class="sbtn-cancel" id="shCancel">Annuler</button></div>';
+  openSheet(h);
+  $('shCancel').onclick=closeSheet;
+  document.querySelectorAll('#sheet .opt').forEach(el=>{ el.onclick=()=>{ const o=options[+el.dataset.i]; closeSheet(); cb(o.value); }; });
+}
+function sheetActions(title, actions){
+  let h='<h3>'+esc(title)+'</h3>';
+  actions.forEach((a,i)=>{ h+='<div class="opt'+(a.danger?' danger':'')+'" data-i="'+i+'">'+esc(a.label)+'</div>'; });
+  h+='<div class="sbtns"><button class="sbtn-cancel" id="shCancel">Annuler</button></div>';
+  openSheet(h);
+  $('shCancel').onclick=closeSheet;
+  document.querySelectorAll('#sheet .opt').forEach(el=>{ el.onclick=()=>{ const a=actions[+el.dataset.i]; closeSheet(); a.cb(); }; });
+}
+
+/* ====================== ACTIONS PIÈCE / ÉQUIPEMENT ====================== */
+function roomActions(roomId){
+  const r = findRoom(view.tdId, roomId); if(!r) return;
+  sheetActions('Pièce : ' + r.name, [
+    {label:'✏️  Renommer', cb:()=> sheetInput('Renommer la pièce', '', r.name, 'Renommer', v=>{ renameRoomStruct(roomId, v); nav('td'); toast('Pièce renommée'); })},
+    {label:'↔️  Déplacer vers un autre TD', cb:()=>{
+      const opts = TREE.filter(z => z.id !== view.tdId).map(z => ({label:z.name + (z.fullName ? (' — '+z.fullName) : ''), value:z.id}));
+      if(!opts.length){ toast('Aucun autre TD'); return; }
+      sheetChoose('Déplacer « '+r.name+' »', 'Choisir le Tableau Divisionnaire de destination', opts, zid=>{ moveRoomStruct(roomId, zid); nav('td'); toast('Pièce déplacée vers un autre TD'); });
+    }},
+    {label:'🗑  Supprimer la pièce', danger:true, cb:()=>{
+      const n = r.equipment.length;
+      const msg = n>0 ? ('Cette pièce contient '+n+' équipement(s) — ils seront aussi supprimés.') : 'Cette pièce sera supprimée.';
+      sheetConfirm('Supprimer « '+r.name+' » ?', msg, 'Supprimer', true, ()=>{ deleteRoomStruct(roomId); nav('td'); toast('Pièce supprimée'); });
+    }}
+  ]);
+}
+function chooseRoomForEquip(equipId, eqName){
+  const opts=[];
+  TREE.forEach(z => z.rooms.forEach(r => { if(r.id !== view.roomId) opts.push({label:z.name+' · '+r.name, value:r.id}); }));
+  if(!opts.length){ toast('Aucune autre pièce'); return; }
+  sheetChoose('Déplacer « '+eqName+' »', 'Choisir la pièce de destination', opts, rid=>{
+    moveEquipStruct(equipId, rid);
+    toast('Équipement déplacé');
+    view.equipId = null; nav('room');
+  });
+}
+function equipActions(equipId){
+  const r = findRoom(view.tdId, view.roomId); if(!r) return;
+  const e = r.equipment.find(x => x.id === equipId); if(!e) return;
+  sheetActions('Équipement : ' + e.name, [
+    {label:'↔️  Déplacer vers une autre pièce', cb:()=> chooseRoomForEquip(equipId, e.name)},
+    {label:'🗑  Supprimer l’équipement', danger:true, cb:()=> sheetConfirm('Supprimer « '+e.name+' » ?', '', 'Supprimer', true, ()=>{ deleteEquipStruct(equipId); nav('room'); toast('Équipement supprimé'); })}
+  ]);
+}
 
 /* ====================== RENDU : EN-TÊTE ====================== */
 function renderHeader(){
@@ -394,7 +574,7 @@ function renderHome(){
 
   html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Tableaux Divisionnaires</h2>';
 
-  zones.forEach(z => {
+  TREE.forEach(z => {
     const c = countsTD(z);
     const zp = c.total ? Math.round(c.done / c.total * 100) : 0;
     html += '<div class="row-item" data-z="' + z.id + '">' +
@@ -426,7 +606,7 @@ function countsTD(z){
 
 function globalCounts(){
   let total = 0, done = 0, photoN = Object.keys(photos).length;
-  zones.forEach(z => {
+  TREE.forEach(z => {
     const c = countsTD(z);
     total += c.total;
     done += c.done;
@@ -460,6 +640,7 @@ function renderTD(){
       '<div class="row-title">' + esc(r.name) + '</div>' +
       '<div class="row-desc">' + rc + ' équipements · ' + rd + ' traités</div>' +
       '</div>' +
+      '<button class="rowact" data-ract="' + r.id + '">⋯</button>' +
       '<div class="row-chev">' + IC.chev + '</div></div>';
   });
 
@@ -470,17 +651,11 @@ function renderTD(){
   document.querySelectorAll('.row-item').forEach(r => {
     r.onclick = () => { view.roomId = r.dataset.r; nav('room'); };
   });
+  document.querySelectorAll('.rowact').forEach(b => {
+    b.onclick = (ev) => { ev.stopPropagation(); roomActions(b.dataset.ract); };
+  });
 
-  $('addRoom').onclick = () => {
-    const roomId = 'room_' + Date.now();
-    const name = prompt('Nom de la pièce :');
-    if(!name) return;
-    state.rooms[roomId] = {id: roomId, name: name, equipment: []};
-    const z = findZone(view.tdId);
-    z.rooms.push({id: roomId, name: name, equipment: []});
-    touch('room:' + roomId);
-    renderTD();
-  };
+  $('addRoom').onclick = () => sheetInput('Nouvelle pièce', 'Dans ' + z.name, '', 'Ajouter', name => { addRoomStruct(view.tdId, name); nav('td'); toast('Pièce ajoutée'); });
 }
 
 /* ====================== RENDU : PIÈCE (Équipements) ====================== */
@@ -503,8 +678,9 @@ function renderRoom(){
       '<div class="row-icon">' + (st === 'ok' ? '✓' : '⚡') + '</div>' +
       '<div class="row-body">' +
       '<div class="row-title">' + esc(e.name) + '</div>' +
-      '<div class="row-desc">' + (f.local || 'Local non spécifié') + ' · ' + ph.length + ' photo(s)</div>' +
+      '<div class="row-desc">' + esc(f.local || 'Local non spécifié') + ' · ' + ph.length + ' photo(s)</div>' +
       '</div>' +
+      '<button class="rowact" data-eact="' + e.id + '">⋯</button>' +
       '<div class="row-chev">' + IC.chev + '</div></div>';
   });
 
@@ -515,17 +691,11 @@ function renderRoom(){
   document.querySelectorAll('.row-item').forEach(row => {
     row.onclick = () => { view.equipId = row.dataset.e; nav('equip'); };
   });
+  document.querySelectorAll('.rowact').forEach(b => {
+    b.onclick = (ev) => { ev.stopPropagation(); equipActions(b.dataset.eact); };
+  });
 
-  $('addEquip').onclick = () => {
-    const equipId = 'equip_' + Date.now();
-    const name = prompt('Nom de l\'équipement :');
-    if(!name) return;
-    const e = {id: equipId, name: name};
-    r.equipment.push(e);
-    state.equip[equipId] = {};
-    touch('equip:' + equipId);
-    renderRoom();
-  };
+  $('addEquip').onclick = () => sheetInput('Nouvel équipement', 'Dans ' + r.name, '', 'Ajouter', name => { addEquipStruct(view.roomId, name); nav('room'); toast('Équipement ajouté'); });
 }
 
 /* ====================== RENDU : ÉQUIPEMENT ====================== */
@@ -533,6 +703,7 @@ function renderEquip(){
   const z = findZone(view.tdId);
   const r = findRoom(view.tdId, view.roomId);
   const e = r.equipment.find(eq => eq.id === view.equipId);
+  if(!state.equip[e.id]) state.equip[e.id] = {};
   const f = state.equip[e.id] || {};
   const ph = photosFor(e.id);
 
@@ -584,6 +755,12 @@ function renderEquip(){
     '<button class="btn sec" id="addEquipPhoto" style="margin-top:9px">' + IC.cam + ' Ajouter une photo</button>' +
     '</div>';
 
+  html += '<div class="panel">' +
+    '<h2>Organisation</h2>' +
+    '<button class="btn sec" id="moveEq">↔️ Déplacer vers une autre pièce</button>' +
+    '<button class="btn sec" id="delEq" style="margin-top:9px;color:#c0392b;border-color:#e7b3ab">🗑 Supprimer cet équipement</button>' +
+    '</div>';
+
   $('app').innerHTML = html;
 
   // Rendus photos
@@ -632,6 +809,9 @@ function renderEquip(){
 
   $('addPlatePhoto').onclick = () => triggerPhoto(e.id, true);
   $('addEquipPhoto').onclick = () => triggerPhoto(e.id, false);
+
+  $('moveEq').onclick = () => chooseRoomForEquip(e.id, e.name);
+  $('delEq').onclick = () => sheetConfirm('Supprimer « ' + e.name + ' » ?', '', 'Supprimer', true, () => { deleteEquipStruct(e.id); view.equipId = null; nav('room'); toast('Équipement supprimé'); });
 }
 
 function renderStripKind(equipId, plate){
@@ -652,6 +832,7 @@ function renderStripKind(equipId, plate){
 /* ====================== NAVIGATION ====================== */
 function nav(name){
   view.name = name;
+  rebuildTree();
   window.scrollTo(0, 0);
   renderHeader();
   if(name === 'home') renderHome();
@@ -729,6 +910,7 @@ async function boot(){
   // Champs nécessaires à la synchro partagée (évite tout plantage de sync.js)
   state.zones = state.zones || {};
   state.custom = state.custom || {};
+  ensureStruct(); // modifications de structure (pièces/équipements ajoutés, déplacés, renommés, supprimés)
 
   // Charger photos
   if(idbOK){
