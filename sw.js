@@ -1,6 +1,6 @@
 /* Service worker — Relevé Terrain WADRA Bay (TD -> Pièce -> Équipement)
    v4 : pré-remplissage Mission 1 (Z03) + photos terrain + synchro Supabase */
-const CACHE = 'wadra-releve-v7';
+const CACHE = 'wadra-releve-v8';
 const ASSETS = [
   './',
   './index.html',

@@ -450,6 +450,28 @@ function deleteRoomStruct(roomId){
 function addEquipStruct(roomId, name){ const S=ensureStruct(); const id='e_'+rndId(); S.addedEquip.push({id:id, room:roomId, name:name}); state.equip[id]=state.equip[id]||{}; structDirty(); }
 function moveEquipStruct(equipId, roomId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {room:roomId}); structDirty(); }
 function deleteEquipStruct(equipId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {del:true}); structDirty(); }
+function duplicateEquip(equipId){
+  const r = findRoom(view.tdId, view.roomId); if(!r) return;
+  const e = r.equipment.find(x => x.id === equipId); if(!e) return;
+  const S = ensureStruct();
+  const newId = 'e_' + rndId();
+  S.addedEquip.push({id:newId, room: view.roomId, name: e.name + ' (copie)'});
+  const src = state.equip[equipId] || {};
+  const copy = {};
+  ['local','marque','modele','puissance','qte'].forEach(k => { if(src[k] != null && src[k] !== '') copy[k] = src[k]; });
+  if(copy.marque == null && e.marque) copy.marque = e.marque;
+  if(copy.modele == null && e.modele) copy.modele = e.modele;
+  if(copy.puissance == null && e.puissance) copy.puissance = e.puissance;
+  if(copy.qte == null && e.qte) copy.qte = e.qte;
+  state.equip[newId] = copy; // statut « À faire », pas d'observations ni photos copiées
+  structDirty();
+}
+function qteOf(e){
+  const f = state.equip[e.id] || {};
+  let q = (f.qte != null && f.qte !== '') ? f.qte : (e.qte != null ? e.qte : 1);
+  q = parseInt(q, 10);
+  return (isNaN(q) || q < 1) ? 1 : q;
+}
 
 /* ====================== FEUILLE D'ACTION (modale, remplace prompt/confirm) ====================== */
 let sheetCloseTimer = null;
@@ -525,6 +547,7 @@ function equipActions(equipId){
   const r = findRoom(view.tdId, view.roomId); if(!r) return;
   const e = r.equipment.find(x => x.id === equipId); if(!e) return;
   sheetActions('Équipement : ' + e.name, [
+    {label:'⧉  Dupliquer', cb:()=>{ duplicateEquip(equipId); nav('room'); toast('Équipement dupliqué'); }},
     {label:'↔️  Déplacer vers une autre pièce', cb:()=> chooseRoomForEquip(equipId, e.name)},
     {label:'🗑  Supprimer l’équipement', danger:true, cb:()=> sheetConfirm('Supprimer « '+e.name+' » ?', '', 'Supprimer', true, ()=>{ deleteEquipStruct(equipId); nav('room'); toast('Équipement supprimé'); })}
   ]);
@@ -676,10 +699,11 @@ function renderRoom(){
     const f = state.equip[e.id] || {};
     const st = f.statut || '';
     const ph = photosFor(e.id);
+    const qt = qteOf(e);
     html += '<div class="row-item" data-e="' + e.id + '" style="border-left:5px solid #' + (st === 'ok' ? '1a9d5a' : 'c3cad0') + '">' +
       '<div class="row-icon">' + (st === 'ok' ? '✓' : '⚡') + '</div>' +
       '<div class="row-body">' +
-      '<div class="row-title">' + esc(e.name) + '</div>' +
+      '<div class="row-title">' + esc(e.name) + (qt > 1 ? ' <span style="color:#0d7a6f;font-weight:800">×' + qt + '</span>' : '') + '</div>' +
       '<div class="row-desc">' + esc(f.local || 'Local non spécifié') + ' · ' + ph.length + ' photo(s)</div>' +
       '</div>' +
       '<button class="rowact" data-eact="' + e.id + '">⋯</button>' +
@@ -732,9 +756,13 @@ function renderEquip(){
     '<label class="fld"><span>Modèle</span>' +
     '<input type="text" id="modeleInput" value="' + esc(f.modele || '') + '"></label>' +
     '</div>' +
+    '<div class="row2">' +
     '<label class="fld"><span>Puissance (kW)</span>' +
     '<input type="text" id="puissanceInput" placeholder="ex. 2.2" value="' + esc(f.puissance || '') + '"' +
-    (f.pwAuto ? ' style="border-color:#e0892a;background:#fff8ee"' : '') + '></label>';
+    (f.pwAuto ? ' style="border-color:#e0892a;background:#fff8ee"' : '') + '></label>' +
+    '<label class="fld"><span>Quantité (nb d\'unités)</span>' +
+    '<input type="number" inputmode="numeric" min="1" id="qteInput" placeholder="1" value="' + esc((f.qte != null && f.qte !== '') ? f.qte : (e.qte != null ? e.qte : '')) + '"></label>' +
+    '</div>';
 
   if(f.pwAuto){
     html += '<div class="tiny muted">⚡ Calculé automatiquement depuis la plaque</div>' +
@@ -759,7 +787,8 @@ function renderEquip(){
 
   html += '<div class="panel">' +
     '<h2>Organisation</h2>' +
-    '<button class="btn sec" id="moveEq">↔️ Déplacer vers une autre pièce</button>' +
+    '<button class="btn sec" id="dupEq">⧉ Dupliquer cet équipement</button>' +
+    '<button class="btn sec" id="moveEq" style="margin-top:9px">↔️ Déplacer vers une autre pièce</button>' +
     '<button class="btn sec" id="delEq" style="margin-top:9px;color:#c0392b;border-color:#e7b3ab">🗑 Supprimer cet équipement</button>' +
     '</div>';
 
@@ -796,6 +825,11 @@ function renderEquip(){
     touch('equip:' + e.id);
   });
 
+  $('qteInput').addEventListener('input', function(){
+    state.equip[e.id].qte = this.value;
+    touch('equip:' + e.id);
+  });
+
   $('obsInput').addEventListener('input', function(){
     state.equip[e.id].observations = this.value;
     touch('equip:' + e.id);
@@ -812,6 +846,7 @@ function renderEquip(){
   $('addPlatePhoto').onclick = () => triggerPhoto(e.id, true);
   $('addEquipPhoto').onclick = () => triggerPhoto(e.id, false);
 
+  $('dupEq').onclick = () => { duplicateEquip(e.id); view.equipId = null; nav('room'); toast('Équipement dupliqué'); };
   $('moveEq').onclick = () => chooseRoomForEquip(e.id, e.name);
   $('delEq').onclick = () => sheetConfirm('Supprimer « ' + e.name + ' » ?', '', 'Supprimer', true, () => { deleteEquipStruct(e.id); view.equipId = null; nav('room'); toast('Équipement supprimé'); });
 }
