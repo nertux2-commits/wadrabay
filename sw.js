@@ -1,10 +1,15 @@
 /* Service worker — Relevé Terrain WADRA Bay (TD -> Pièce -> Équipement)
    v4 : pré-remplissage Mission 1 (Z03) + photos terrain + synchro Supabase */
-const CACHE = 'wadra-releve-v9';
+const CACHE = 'wadra-releve-v10';
+/* Miniatures du catalogue d'équipements (notices techniques c01..c87) */
+const CATALOG_IMGS = Array.from({length: 87}, function (_, i) {
+  return './catalog_img/c' + ('0' + (i + 1)).slice(-2) + '.jpg';
+});
 const ASSETS = [
   './',
   './index.html',
   './data.js',
+  './catalog.js',
   './config.js',
   './seed_z03.js',
   './sync.js',
@@ -46,7 +51,7 @@ self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE).then(function (c) {
       // addAll échoue si UN seul asset manque -> on met en cache un par un, tolérant
-      return Promise.all(ASSETS.map(function (u) {
+      return Promise.all(ASSETS.concat(CATALOG_IMGS).map(function (u) {
         return c.add(u).catch(function () { return null; });
       }));
     }).then(function () { return self.skipWaiting(); })

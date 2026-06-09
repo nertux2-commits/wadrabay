@@ -156,6 +156,7 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="./data.js"></script>
+<script src="./catalog.js"></script>
 <script src="./config.js"></script>
 <script src="./seed_z03.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -447,7 +448,92 @@ function deleteRoomStruct(roomId){
   S.rooms[roomId]=Object.assign({}, S.rooms[roomId], {del:true});
   structDirty();
 }
-function addEquipStruct(roomId, name){ const S=ensureStruct(); const id='e_'+rndId(); S.addedEquip.push({id:id, room:roomId, name:name}); state.equip[id]=state.equip[id]||{}; structDirty(); }
+function addEquipStruct(roomId, name){ const S=ensureStruct(); const id='e_'+rndId(); S.addedEquip.push({id:id, room:roomId, name:name}); state.equip[id]=state.equip[id]||{}; structDirty(); return id; }
+
+/* ---- Création depuis le catalogue (fiches techniques DOE) ---- */
+function addEquipFromCatalog(roomId, item){
+  const id = addEquipStruct(roomId, item.name);
+  // Pré-remplissage des caractéristiques depuis la notice technique
+  state.equip[id] = {
+    marque: item.marque || '',
+    modele: item.modele || '',
+    puissance: item.puissance || '',
+    observations: item.obs ? ('[Catalogue] ' + item.obs) : '',
+    catRef: item.id
+  };
+  state.ts = state.ts || {};
+  state.ts['equip:' + id] = new Date().toISOString();
+  state.dirty = state.dirty || {};
+  state.dirty['equip:' + id] = 1;
+  scheduleSave();
+  // Photo de référence (page clé de la notice) ajoutée comme photo « plaque »
+  if(item.img && window.WADRA_CATALOG){
+    fetch(WADRA_CATALOG.imgBase + item.img)
+      .then(r => (r && r.ok) ? r.blob() : null)
+      .then(async blob => {
+        if(!blob) return;
+        const pid = 'p' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+        const rec = {id: pid, key: id, blob: blob, plate: true, synced: false};
+        if(idbOK){ try { await idbPut('photos', rec); } catch(e){} }
+        rec.url = URL.createObjectURL(blob);
+        photos[pid] = rec;
+        touch('photo');
+        if(view.name === 'equip' && view.equipId === id) renderEquip();
+        else if(view.name === 'room') renderRoom();
+      })
+      .catch(() => {});
+  }
+  return id;
+}
+
+function sheetCatalogPicker(roomId, roomName){
+  const CAT = (window.WADRA_CATALOG && WADRA_CATALOG.items) || [];
+  const freeEntry = () => sheetInput('Nouvel équipement (saisie libre)', 'Dans ' + roomName, '', 'Ajouter', name => { addEquipStruct(roomId, name); nav('room'); toast('Équipement ajouté'); });
+  if(!CAT.length){ freeEntry(); return; }
+  let h = '<h3>Nouvel équipement</h3>' +
+    '<div class="sub">Dans ' + esc(roomName) + ' — choisir un modèle du catalogue (fiches techniques DOE) : les caractéristiques et la photo de la notice sont pré-remplies.</div>' +
+    '<input id="catSearch" type="text" placeholder="🔎 Rechercher : nom, marque, modèle, catégorie…">' +
+    '<div id="catList" style="max-height:44vh;overflow:auto;margin-bottom:10px"></div>' +
+    '<div class="sbtns"><button class="sbtn-cancel" id="shCancel">Annuler</button><button class="sbtn-ok" id="catFree">✏️ Créer hors liste</button></div>';
+  openSheet(h);
+  $('shCancel').onclick = closeSheet;
+  $('catFree').onclick = () => { closeSheet(); freeEntry(); };
+
+  const pick = (item) => {
+    closeSheet();
+    const eid = addEquipFromCatalog(roomId, item);
+    view.equipId = eid;
+    nav('equip');
+    toast('Ajouté depuis le catalogue — compléter et prendre la photo d’ensemble');
+  };
+
+  const renderList = (q) => {
+    const box = $('catList');
+    if(!box) return;
+    q = (q || '').trim().toLowerCase();
+    const match = CAT.filter(it => !q ||
+      (it.name + ' ' + (it.marque||'') + ' ' + (it.modele||'') + ' ' + (it.cat||'')).toLowerCase().indexOf(q) !== -1);
+    if(!match.length){ box.innerHTML = '<div class="tiny muted" style="padding:10px 4px">Aucun résultat — utiliser « Créer hors liste ».</div>'; return; }
+    let html = '', lastCat = null;
+    match.forEach(it => {
+      if(it.cat !== lastCat){
+        lastCat = it.cat;
+        html += '<div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:10px 2px 5px">' + esc(it.cat) + '</div>';
+      }
+      const kw = (it.puissance && it.puissance !== '0') ? (it.puissance + ' kW') : (it.puissance === '0' ? 'passif' : 'P à relever');
+      html += '<div class="opt catit" data-cid="' + it.id + '" style="display:block">' +
+        '<div style="font-weight:600;font-size:14px">' + esc(it.name) + '</div>' +
+        '<div class="tiny muted" style="font-weight:400;margin-top:1px">' + esc((it.marque ? it.marque + ' · ' : '') + (it.modele || '')) + ' · ' + kw + (it.img ? ' · 📄 notice' : '') + '</div>' +
+        '</div>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll('.catit').forEach(el => {
+      el.onclick = () => { const it = CAT.find(x => x.id === el.dataset.cid); if(it) pick(it); };
+    });
+  };
+  renderList('');
+  $('catSearch').addEventListener('input', function(){ renderList(this.value); });
+}
 function moveEquipStruct(equipId, roomId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {room:roomId}); structDirty(); }
 function deleteEquipStruct(equipId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {del:true}); structDirty(); }
 function renameEquipStruct(equipId, name){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {name:name}); structDirty(); }
@@ -734,7 +820,7 @@ function renderRoom(){
     b.onclick = (ev) => { ev.stopPropagation(); equipActions(b.dataset.eact); };
   });
 
-  $('addEquip').onclick = () => sheetInput('Nouvel équipement', 'Dans ' + r.name, '', 'Ajouter', name => { addEquipStruct(view.roomId, name); nav('room'); toast('Équipement ajouté'); });
+  $('addEquip').onclick = () => sheetCatalogPicker(view.roomId, r.name);
 }
 
 /* ====================== RENDU : ÉQUIPEMENT ====================== */
