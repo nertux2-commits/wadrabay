@@ -411,13 +411,13 @@ function buildTree(){
     if(ov.del) return;
     let rid = ov.room || r.id;
     if(!eff[rid]) rid = eff[r.id] ? r.id : null;
-    if(rid && eff[rid]) eff[rid].equipment.push(e);
+    if(rid && eff[rid]) eff[rid].equipment.push(ov.name != null ? Object.assign({}, e, {name: ov.name}) : e);
   })));
   S.addedEquip.forEach(ae => {
     const ov = EO[ae.id] || {};
     if(ov.del) return;
     const rid = ov.room || ae.room;
-    if(rid && eff[rid]) eff[rid].equipment.push({id:ae.id, name:ae.name, custom:true});
+    if(rid && eff[rid]) eff[rid].equipment.push({id:ae.id, name:(ov.name != null ? ov.name : ae.name), custom:true});
   });
   const ordered = [];
   zones.forEach(z => z.rooms.forEach(r => ordered.push(r.id)));
@@ -450,21 +450,33 @@ function deleteRoomStruct(roomId){
 function addEquipStruct(roomId, name){ const S=ensureStruct(); const id='e_'+rndId(); S.addedEquip.push({id:id, room:roomId, name:name}); state.equip[id]=state.equip[id]||{}; structDirty(); }
 function moveEquipStruct(equipId, roomId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {room:roomId}); structDirty(); }
 function deleteEquipStruct(equipId){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {del:true}); structDirty(); }
-function duplicateEquip(equipId){
-  const r = findRoom(view.tdId, view.roomId); if(!r) return;
-  const e = r.equipment.find(x => x.id === equipId); if(!e) return;
+function renameEquipStruct(equipId, name){ const S=ensureStruct(); S.equip[equipId]=Object.assign({}, S.equip[equipId], {name:name}); structDirty(); }
+async function duplicateEquip(equipId){
+  const r = findRoom(view.tdId, view.roomId); if(!r) return null;
+  const e = r.equipment.find(x => x.id === equipId); if(!e) return null;
   const S = ensureStruct();
   const newId = 'e_' + rndId();
   S.addedEquip.push({id:newId, room: view.roomId, name: e.name + ' (copie)'});
+  // copier les données saisies (sauf le marqueur IA)
   const src = state.equip[equipId] || {};
   const copy = {};
-  ['local','marque','modele','puissance','qte'].forEach(k => { if(src[k] != null && src[k] !== '') copy[k] = src[k]; });
+  ['statut','local','marque','modele','puissance','observations','qte'].forEach(k => { if(src[k] != null && src[k] !== '') copy[k] = src[k]; });
   if(copy.marque == null && e.marque) copy.marque = e.marque;
   if(copy.modele == null && e.modele) copy.modele = e.modele;
   if(copy.puissance == null && e.puissance) copy.puissance = e.puissance;
   if(copy.qte == null && e.qte) copy.qte = e.qte;
-  state.equip[newId] = copy; // statut « À faire », pas d'observations ni photos copiées
+  state.equip[newId] = copy;
+  // copier les photos (plaque + équipement) sous le nouvel id, à re-synchroniser
+  const srcPhotos = Object.values(photos).filter(p => p.key === equipId);
+  for(const p of srcPhotos){
+    const nid = 'p' + Date.now() + '_' + Math.random().toString(36).slice(2,9);
+    const rec = {id: nid, key: newId, blob: p.blob, plate: !!p.plate, synced: false};
+    if(idbOK){ try { await idbPut('photos', rec); } catch(ex){} }
+    rec.url = URL.createObjectURL(p.blob);
+    photos[nid] = rec;
+  }
   structDirty();
+  return newId;
 }
 function qteOf(e){
   const f = state.equip[e.id] || {};
@@ -547,7 +559,8 @@ function equipActions(equipId){
   const r = findRoom(view.tdId, view.roomId); if(!r) return;
   const e = r.equipment.find(x => x.id === equipId); if(!e) return;
   sheetActions('Équipement : ' + e.name, [
-    {label:'⧉  Dupliquer', cb:()=>{ duplicateEquip(equipId); nav('room'); toast('Équipement dupliqué'); }},
+    {label:'✏️  Renommer', cb:()=> sheetInput('Renommer l’équipement', '', e.name, 'Renommer', v=>{ renameEquipStruct(equipId, v); nav('room'); toast('Équipement renommé'); })},
+    {label:'⧉  Dupliquer (avec les photos)', cb:()=>{ toast('Duplication…'); duplicateEquip(equipId).then(()=>{ nav('room'); toast('Équipement dupliqué (photos incluses)'); }); }},
     {label:'↔️  Déplacer vers une autre pièce', cb:()=> chooseRoomForEquip(equipId, e.name)},
     {label:'🗑  Supprimer l’équipement', danger:true, cb:()=> sheetConfirm('Supprimer « '+e.name+' » ?', '', 'Supprimer', true, ()=>{ deleteEquipStruct(equipId); nav('room'); toast('Équipement supprimé'); })}
   ]);
@@ -787,7 +800,8 @@ function renderEquip(){
 
   html += '<div class="panel">' +
     '<h2>Organisation</h2>' +
-    '<button class="btn sec" id="dupEq">⧉ Dupliquer cet équipement</button>' +
+    '<button class="btn sec" id="renEq">✏️ Renommer cet équipement</button>' +
+    '<button class="btn sec" id="dupEq" style="margin-top:9px">⧉ Dupliquer (avec les photos)</button>' +
     '<button class="btn sec" id="moveEq" style="margin-top:9px">↔️ Déplacer vers une autre pièce</button>' +
     '<button class="btn sec" id="delEq" style="margin-top:9px;color:#c0392b;border-color:#e7b3ab">🗑 Supprimer cet équipement</button>' +
     '</div>';
@@ -846,7 +860,8 @@ function renderEquip(){
   $('addPlatePhoto').onclick = () => triggerPhoto(e.id, true);
   $('addEquipPhoto').onclick = () => triggerPhoto(e.id, false);
 
-  $('dupEq').onclick = () => { duplicateEquip(e.id); view.equipId = null; nav('room'); toast('Équipement dupliqué'); };
+  $('renEq').onclick = () => sheetInput('Renommer l’équipement', '', e.name, 'Renommer', v => { renameEquipStruct(e.id, v); nav('equip'); toast('Équipement renommé'); });
+  $('dupEq').onclick = () => { toast('Duplication…'); duplicateEquip(e.id).then(() => { view.equipId = null; nav('room'); toast('Équipement dupliqué (photos incluses)'); }); };
   $('moveEq').onclick = () => chooseRoomForEquip(e.id, e.name);
   $('delEq').onclick = () => sheetConfirm('Supprimer « ' + e.name + ' » ?', '', 'Supprimer', true, () => { deleteEquipStruct(e.id); view.equipId = null; nav('room'); toast('Équipement supprimé'); });
 }
