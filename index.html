@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Relevé WADRA">
+<meta name="apple-mobile-web-app-title" content="Revue Énergétique">
 <meta name="theme-color" content="#0d7a6f">
-<title>Relevé Terrain — WADRA Bay (TD → Pièce → Équipement)</title>
+<title>Revue Énergétique — Équipements · WADRA Bay</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 html,body{height:100%}
@@ -675,7 +675,7 @@ function renderHeader(){
   const h = $('hdr');
 
   if(view.name === 'home'){
-    h.innerHTML = '<div class="htitle">Relevé Terrain — WADRA Bay</div>';
+    h.innerHTML = '<div class="htitle">Revue Énergétique — Équipements</div>';
   } else if(view.name === 'td'){
     const z = findZone(view.tdId);
     h.innerHTML = '<button class="hbtn" id="goHome">' + IC.back + '</button>' +
@@ -714,9 +714,6 @@ function renderHome(){
     '</div></div>';
 
   html += '<div class="panel">' +
-    '<label class="fld" style="margin:0"><span>Auditeur(s)</span>' +
-    '<input id="audIn" type="text" placeholder="Votre nom" value="' + esc(state.meta.auditeur || '') + '"></label>' +
-    '<hr style="border:none;border-top:1px solid #eef1f2;margin:12px 0">' +
     '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
     '<b style="font-size:15px">Avancement global</b>' +
     '<span class="small muted">' + g.done + ' / ' + g.total + ' équipements</span></div>' +
@@ -739,12 +736,7 @@ function renderHome(){
       '<div class="row-chev">' + IC.chev + '</div></div>';
   });
 
-  html += '<div class="tiny muted" style="text-align:center;margin:16px 6px 4px;line-height:1.55">' +
-    'Outil de suivi des usages énergétiques de l\'hôtel<br>' +
-    'Démarche de management de l\'énergie — ISO 50001</div>';
-
   $('app').innerHTML = html;
-  $('audIn').addEventListener('input', function(){ state.meta.auditeur = this.value; touch('meta'); });
   document.querySelectorAll('.row-item').forEach(r => {
     r.onclick = () => { view.tdId = r.dataset.z; nav('td'); };
   });
