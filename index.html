@@ -148,7 +148,7 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 <div class="viewer hidden" id="viewer">
   <div class="vtop"><button id="vClose">Fermer</button></div>
   <div class="vimg"><img id="vImg" alt=""></div>
-  <div class="vbot"><button id="vDel">Supprimer cette photo</button></div>
+  <div class="vbot"><button id="vMove" style="background:#0d7a6f;margin-bottom:9px">↔ Reclasser Plaque/Équipement</button><button id="vDel">Supprimer cette photo</button></div>
 </div>
 <div class="toast" id="toast"></div>
 <div class="ovl hidden" id="sheet"></div>
@@ -340,7 +340,8 @@ $('camInput').addEventListener('change', async function(){
     } catch(e) { toast('Erreur photo'); }
   }
 
-  renderPhotoStrip(photoTargetKey);
+  renderStripKind(photoTargetKey, true);
+  renderStripKind(photoTargetKey, false);
   toast('Photo(s) enregistrée(s)');
   touch('photo');
 });
@@ -351,7 +352,8 @@ async function deletePhoto(id){
   if(p.url) URL.revokeObjectURL(p.url);
   delete photos[id];
   if(idbOK) try { await idbDel('photos', id); } catch(e) {}
-  renderPhotoStrip(p.key);
+  renderStripKind(p.key, true);
+  renderStripKind(p.key, false);
   scheduleSave();
 }
 
@@ -365,6 +367,22 @@ function openViewer(id){
 }
 
 $('vClose').onclick = () => {
+  $('viewer').classList.add('hidden');
+  $('vImg').src = '';
+  viewerCurrent = null;
+};
+
+$('vMove').onclick = async () => {
+  if(!viewerCurrent) return;
+  const p = photos[viewerCurrent];
+  if(!p) return;
+  p.plate = !p.plate;
+  p.synced = false;
+  if(idbOK){ try { await idbPut('photos', {id:p.id, key:p.key, zoneId:p.zoneId, blob:p.blob, plate:p.plate, synced:false}); } catch(e) {} }
+  renderStripKind(p.key, true);
+  renderStripKind(p.key, false);
+  toast(p.plate ? 'Photo reclassée « Plaque »' : 'Photo reclassée « Équipement »');
+  touch('photo');
   $('viewer').classList.add('hidden');
   $('vImg').src = '';
   viewerCurrent = null;
@@ -980,6 +998,8 @@ function renderStripKind(equipId, plate){
   box.querySelectorAll('.thumb').forEach(t => {
     t.onclick = () => openViewer(t.dataset.pid);
   });
+  const ab = box.querySelector('.addphoto');
+  if(ab) ab.onclick = () => triggerPhoto(equipId, plate);
 }
 
 /* ====================== NAVIGATION ====================== */
