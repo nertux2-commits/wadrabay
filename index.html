@@ -680,11 +680,22 @@ function renderHeader(){
 }
 
 /* ====================== RENDU : ACCUEIL ====================== */
+const HERO_URL = 'https://www.wadrabay.nc/images/photo3.jpg'; // photo officielle (site de l'hôtel), pré-cachée par le service worker
 function renderHome(){
   const g = globalCounts();
   const pct = g.total ? Math.round(g.done / g.total * 100) : 0;
 
-  let html = '<div class="panel">' +
+  let html = '<div style="position:relative;border-radius:16px;overflow:hidden;margin-bottom:12px;min-height:190px;' +
+    'background:linear-gradient(135deg,#0d7a6f,#0a5d54 55%,#083f3a);box-shadow:0 2px 10px rgba(20,30,40,.18)">' +
+    '<img src="' + HERO_URL + '" alt="" onerror="this.style.display=\'none\'" ' +
+    'style="display:block;width:100%;height:190px;object-fit:cover;object-position:center 42%">' +
+    '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,40,38,.04) 38%,rgba(6,40,38,.84))"></div>' +
+    '<div style="position:absolute;left:16px;right:16px;bottom:13px;color:#fff">' +
+    '<div style="font-size:22px;font-weight:800;letter-spacing:.01em;text-shadow:0 1px 8px rgba(0,0,0,.45)">Hôtel WADRA Bay</div>' +
+    '<div style="font-size:12.5px;font-weight:500;opacity:.95;text-shadow:0 1px 6px rgba(0,0,0,.4)">Maîtrise de l\'énergie — Suivi des équipements · Lifou</div>' +
+    '</div></div>';
+
+  html += '<div class="panel">' +
     '<label class="fld" style="margin:0"><span>Auditeur(s)</span>' +
     '<input id="audIn" type="text" placeholder="Votre nom" value="' + esc(state.meta.auditeur || '') + '"></label>' +
     '<hr style="border:none;border-top:1px solid #eef1f2;margin:12px 0">' +
@@ -709,6 +720,10 @@ function renderHome(){
       '</div>' +
       '<div class="row-chev">' + IC.chev + '</div></div>';
   });
+
+  html += '<div class="tiny muted" style="text-align:center;margin:16px 6px 4px;line-height:1.55">' +
+    'Outil de suivi des usages énergétiques de l\'hôtel<br>' +
+    'Démarche de management de l\'énergie — ISO 50001</div>';
 
   $('app').innerHTML = html;
   $('audIn').addEventListener('input', function(){ state.meta.auditeur = this.value; touch('meta'); });
