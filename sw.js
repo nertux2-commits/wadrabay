@@ -1,6 +1,6 @@
 /* Service worker — Relevé Terrain WADRA Bay (TD -> Pièce -> Équipement)
    v4 : pré-remplissage Mission 1 (Z03) + photos terrain + synchro Supabase */
-const CACHE = 'wadra-releve-v13';
+const CACHE = 'wadra-releve-v14';
 /* Photo officielle de l'hôtel (page d'accueil) — pré-cachée en no-cors pour le hors-ligne */
 const HERO_URL = 'https://www.wadrabay.nc/images/photo3.jpg';
 /* Miniatures du catalogue d'équipements (notices techniques c01..c87) */
@@ -14,6 +14,7 @@ const ASSETS = [
   './catalog.js',
   './config.js',
   './seed_z03.js',
+  './schemas.js',
   './sync.js',
   './sw.js',
   './photos_z03/Z03_C1_lave-linge-professionnel-n-3_1.jpg',
@@ -70,6 +71,19 @@ self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
   // La base partagée Supabase passe toujours par le réseau (jamais mise en cache)
   if (e.request.url.indexOf('.supabase.co') !== -1) return;
+  // Plans & schémas unifilaires : cache à la demande (1re consultation en ligne, ensuite hors-ligne)
+  if (e.request.url.indexOf('/schemas/') !== -1) {
+    e.respondWith(caches.match(e.request).then(function (cached) {
+      return cached || fetch(e.request).then(function (resp) {
+        if (resp && resp.ok) {
+          var clone = resp.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, clone); });
+        }
+        return resp;
+      });
+    }));
+    return;
+  }
   e.respondWith(caches.match(e.request).then(function (cached) {
     return cached || fetch(e.request).catch(function () {
       return (e.request.mode === 'navigate') ? caches.match('./index.html') : Response.error();

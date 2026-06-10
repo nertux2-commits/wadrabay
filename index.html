@@ -87,6 +87,7 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 .viewer .vtop button{color:#fff;font-size:15px;font-weight:600;padding:8px 14px;background:rgba(255,255,255,.16);border-radius:9px}
 .viewer .vimg{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;overflow:auto}
 .viewer .vimg img{max-width:100%;max-height:100%;border-radius:6px}
+.viewer .vimg img.zoomed{max-width:none;max-height:none}
 .viewer .vbot{padding:12px 14px calc(env(safe-area-inset-bottom) + 14px)}
 .viewer .vbot button{width:100%;padding:13px;border-radius:11px;background:#c0392b;color:#fff;font-weight:700;font-size:15px}
 
@@ -148,6 +149,11 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 <div class="viewer hidden" id="viewer">
   <div class="vtop"><button id="vClose">Fermer</button></div>
   <div class="vimg"><img id="vImg" alt=""></div>
+  <div id="vNav" style="display:none;justify-content:space-between;align-items:center;padding:8px 14px;color:#fff">
+    <button id="vPrev" style="padding:10px 20px;background:rgba(255,255,255,.16);border-radius:9px;font-weight:700;color:#fff">◀</button>
+    <span id="vPageInfo" class="tiny" style="opacity:.85"></span>
+    <button id="vNext" style="padding:10px 20px;background:rgba(255,255,255,.16);border-radius:9px;font-weight:700;color:#fff">▶</button>
+  </div>
   <div class="vbot"><button id="vMove" style="background:#0d7a6f;margin-bottom:9px">↔ Reclasser Plaque/Équipement</button><button id="vDel">Supprimer cette photo</button></div>
 </div>
 <div class="toast" id="toast"></div>
@@ -159,6 +165,7 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 <script src="./catalog.js"></script>
 <script src="./config.js"></script>
 <script src="./seed_z03.js"></script>
+<script src="./schemas.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 "use strict";
@@ -358,18 +365,48 @@ async function deletePhoto(id){
 }
 
 /* ====================== PHOTO VIEWER ====================== */
+let staticPages = null, staticIdx = 0;
+
 function openViewer(id){
   const p = photos[id];
   if(!p) return;
+  staticPages = null;
   viewerCurrent = id;
   $('vImg').src = p.url;
+  $('vImg').classList.remove('zoomed');
+  $('vMove').style.display = '';
+  $('vDel').style.display = '';
+  $('vNav').style.display = 'none';
   $('viewer').classList.remove('hidden');
 }
+
+/* Visionneuse de documents statiques (plan de masse, schémas unifilaires) */
+function openStatic(pages, idx, title){
+  if(!pages || !pages.length) return;
+  staticPages = pages;
+  staticIdx = idx || 0;
+  viewerCurrent = null;
+  $('vMove').style.display = 'none';
+  $('vDel').style.display = 'none';
+  $('vNav').style.display = pages.length > 1 ? 'flex' : 'none';
+  showStaticPage();
+  $('viewer').classList.remove('hidden');
+}
+function showStaticPage(){
+  $('vImg').classList.remove('zoomed');
+  $('vImg').src = './' + staticPages[staticIdx];
+  $('vPageInfo').textContent = 'Page ' + (staticIdx + 1) + ' / ' + staticPages.length + ' — toucher l\'image pour zoomer';
+}
+$('vPrev').onclick = () => { if(!staticPages) return; staticIdx = (staticIdx - 1 + staticPages.length) % staticPages.length; showStaticPage(); };
+$('vNext').onclick = () => { if(!staticPages) return; staticIdx = (staticIdx + 1) % staticPages.length; showStaticPage(); };
+$('vImg').onclick = () => { $('vImg').classList.toggle('zoomed'); };
 
 $('vClose').onclick = () => {
   $('viewer').classList.add('hidden');
   $('vImg').src = '';
+  $('vImg').classList.remove('zoomed');
   viewerCurrent = null;
+  staticPages = null;
 };
 
 $('vMove').onclick = async () => {
@@ -722,6 +759,14 @@ function renderHome(){
     (state.meta.updated ? ' · enreg. ' + new Date(state.meta.updated).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '') +
     '</div></div>';
 
+  if(self.WADRA_PLAN_MASSE && self.WADRA_PLAN_MASSE.length){
+    html += '<div class="row-item" id="pmRow">' +
+      '<div class="row-icon">🗺</div>' +
+      '<div class="row-body"><div class="row-title">Plan de masse</div>' +
+      '<div class="row-desc">Implantation générale du site · ' + self.WADRA_PLAN_MASSE.length + ' page(s)</div></div>' +
+      '<div class="row-chev">' + IC.chev + '</div></div>';
+  }
+
   html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Tableaux Divisionnaires</h2>';
 
   TREE.forEach(z => {
@@ -737,9 +782,10 @@ function renderHome(){
   });
 
   $('app').innerHTML = html;
-  document.querySelectorAll('.row-item').forEach(r => {
+  document.querySelectorAll('.row-item[data-z]').forEach(r => {
     r.onclick = () => { view.tdId = r.dataset.z; nav('td'); };
   });
+  if($('pmRow')) $('pmRow').onclick = () => openStatic(self.WADRA_PLAN_MASSE, 0);
 }
 
 function countsTD(z){
@@ -778,6 +824,13 @@ function renderTD(){
     '<div class="bar"><i style="width:' + zp + '%"></i></div>' +
     '</div>';
 
+  const sch = (self.WADRA_SCHEMAS || {})[z.id] || [];
+  if(sch.length){
+    html += '<div class="panel"><h2>Schémas unifilaires (DOE)</h2>' +
+      sch.map((s, i) => '<button class="btn sec schbtn" data-si="' + i + '" style="margin-top:6px">📄 ' + esc(s.label) + ' · ' + s.pages.length + ' p.</button>').join('') +
+      '</div>';
+  }
+
   html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Pièces</h2>';
 
   z.rooms.forEach(r => {
@@ -802,6 +855,10 @@ function renderTD(){
   });
   document.querySelectorAll('.rowact').forEach(b => {
     b.onclick = (ev) => { ev.stopPropagation(); roomActions(b.dataset.ract); };
+  });
+
+  document.querySelectorAll('.schbtn').forEach(b => {
+    b.onclick = () => { const s = sch[+b.dataset.si]; if(s) openStatic(s.pages, 0, s.label); };
   });
 
   $('addRoom').onclick = () => sheetInput('Nouvelle pièce', 'Dans ' + z.name, '', 'Ajouter', name => { addRoomStruct(view.tdId, name); nav('td'); toast('Pièce ajoutée'); });

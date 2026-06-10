@@ -97,7 +97,7 @@ const zones = [
   },
   {
     "id": "z_sg",
-    "name": "TG-SG",
+    "name": "TD-SG",
     "fullName": "Services Généraux (Bât. I)",
     "kVA": "200 kVA",
     "rooms": [
@@ -477,7 +477,7 @@ const zones = [
   },
   {
     "id": "z_c",
-    "name": "TG-C",
+    "name": "TD-C",
     "fullName": "Cœur du site",
     "kVA": "110.9 kVA",
     "rooms": [
@@ -1459,7 +1459,7 @@ const zones = [
       },
       {
         "id": "z_c_r22",
-        "name": "Éclairage extérieur & VRD (départ aval TG-C) · Accès site",
+        "name": "Éclairage extérieur & VRD (départ aval TD-C) · Accès site",
         "equipment": [
           {
             "id": "eq_2_89",
@@ -1475,7 +1475,7 @@ const zones = [
       },
       {
         "id": "z_c_r23",
-        "name": "Éclairage extérieur & VRD (départ aval TG-C) · Local technique extérieur",
+        "name": "Éclairage extérieur & VRD (départ aval TD-C) · Local technique extérieur",
         "equipment": [
           {
             "id": "eq_2_88",
@@ -1491,7 +1491,7 @@ const zones = [
       },
       {
         "id": "z_c_r24",
-        "name": "Éclairage extérieur & VRD (départ aval TG-C) · Parking",
+        "name": "Éclairage extérieur & VRD (départ aval TD-C) · Parking",
         "equipment": [
           {
             "id": "eq_2_90",
@@ -1507,7 +1507,7 @@ const zones = [
       },
       {
         "id": "z_c_r25",
-        "name": "Éclairage extérieur & VRD (départ aval TG-C) · Tout le site",
+        "name": "Éclairage extérieur & VRD (départ aval TD-C) · Tout le site",
         "equipment": [
           {
             "id": "eq_2_87",
@@ -1533,7 +1533,7 @@ const zones = [
       },
       {
         "id": "z_c_r26",
-        "name": "Éclairage extérieur & VRD (départ aval TG-C) · Voiries / espaces verts",
+        "name": "Éclairage extérieur & VRD (départ aval TD-C) · Voiries / espaces verts",
         "equipment": [
           {
             "id": "eq_2_86",
