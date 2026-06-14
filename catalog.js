@@ -8,7 +8,7 @@
      ajoutée automatiquement comme photo « plaque » de référence.
    ============================================================ */
 window.WADRA_CATALOG = {
-  version: 2,
+  version: 3,
   imgBase: 'catalog_img/',
   items: [
 
@@ -150,6 +150,29 @@ window.WADRA_CATALOG = {
   {id:'c86', cat:'Poste HT/BT', name:'Détecteur de défauts Flair 219', marque:'Schneider Electric', modele:'Flair 219/279', puissance:'',
    obs:'Détecteur de courant de défaut MT, signalisation LED, alim externe 230 V CA.', img:'c86.jpg'},
   {id:'c87', cat:'Poste HT/BT', name:'Fusibles HT 3,6→36 kV', marque:'Schneider Electric', modele:'Fusarc CF', puissance:'0',
-   obs:'Fusibles MT protection transfo (puissance dissipée ≤128 W). Passif.', img:'c87.jpg'}
+   obs:'Fusibles MT protection transfo (puissance dissipée ≤128 W). Passif.', img:'c87.jpg'},
+
+  /* ---------- 10 — RÉSEAU / INFORMATIQUE (courants faibles) — UniFi/Ubiquiti ----------
+     ⚠️ RÈGLE ANTI-DOUBLE-COMPTAGE (source : e-mails MSRI/Mathieu Patignier & J. Plantier, 11/06/2026) :
+     les points d'accès WiFi et les caméras sont alimentés en PoE PAR les switchs.
+     Leur consommation est donc DÉJÀ incluse dans celle du switch (puissance tirée à la prise).
+     → Pour le bilan : compter la conso PROPRE des switchs PoE (hors PoE) + la conso réelle
+       de chaque équipement PoE listé ci-dessous (poe:true) UNE seule fois.
+       Ne PAS additionner « budget PoE max du switch » ET les équipements PoE. */
+
+  {id:'c88', cat:'Réseau / informatique', name:'Switch d\'agrégation 10G (cœur de réseau)', marque:'Ubiquiti UniFi', modele:'USW-Pro-Aggregation', puissance:'0.1',
+   obs:'Switch L3 fibre, 28× SFP+ 10G + 4× SFP28 25G. SANS PoE. Conso max 100 W. Alim AC/DC interne 100 W, 100-240 V (option RPS DC 11,5 V). Source : datasheet USW-Pro-Aggregation.', img:'c88.jpg', poe:false, poeHost:false},
+
+  {id:'c89', cat:'Réseau / informatique', name:'Switch PoE (16/24/48 ports) — alimente AP & caméras', marque:'Ubiquiti UniFi', modele:'USW-16-PoE / USW-24-PoE / USW-48-PoE', puissance:'',
+   obs:'⚠️ PRÉCISER LE MODÈLE + relever la conso à la prise. Conso PROPRE (hors PoE) : USW-16-PoE 18 W / USW-24-PoE 25 W / USW-48-PoE 45 W. Budget PoE délivré (802.3af/at) : 42 / 95 / 195 W — sert à alimenter les AP WiFi et caméras, qui sont comptés à part (ne pas ajouter ce budget en plus des équipements PoE). Alim interne 60/120/240 W. Source : datasheet USW PoE.', img:'c89.jpg', poe:false, poeHost:true},
+
+  {id:'c90', cat:'Réseau / informatique', name:'Point d\'accès WiFi 6 U6-Mesh-Pro (PoE)', marque:'Ubiquiti UniFi', modele:'U6-Mesh-Pro', puissance:'0.009',
+   obs:'Point d\'accès WiFi 6. Conso max 9 W. Alimenté en PoE par le switch (48 V). ⚠️ Conso déjà tirée via le switch — valeur informative, à ne compter qu\'une fois (poe:true). Source : datasheet U6-Mesh-Pro.', img:'c90.jpg', poe:true},
+
+  {id:'c91', cat:'Réseau / informatique', name:'Point d\'accès WiFi 7 U7-Lite (PoE)', marque:'Ubiquiti UniFi', modele:'U7-Lite', puissance:'0.013',
+   obs:'Point d\'accès WiFi 7. Conso max 13 W. Alimenté en PoE par le switch. ⚠️ Conso déjà tirée via le switch — valeur informative, à ne compter qu\'une fois (poe:true). Source : datasheet U7-Lite.', img:'c91.jpg', poe:true},
+
+  {id:'c92', cat:'Réseau / informatique', name:'Caméra IP de vidéosurveillance (PoE)', marque:'Ubiquiti UniFi Protect', modele:'Caméra G-series PoE', puissance:'',
+   obs:'Caméra IP alimentée en PoE par le switch (typ. ~6-12 W selon modèle, ex. G4). ⚠️ Conso déjà tirée via le switch — relever le modèle/plaque, à ne compter qu\'une fois (poe:true). Aucune notice individuelle transmise.', poe:true}
   ]
 };

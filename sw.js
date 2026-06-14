@@ -1,10 +1,10 @@
 /* Service worker — Relevé Terrain WADRA Bay (TD -> Pièce -> Équipement)
    v4 : pré-remplissage Mission 1 (Z03) + photos terrain + synchro Supabase */
-const CACHE = 'wadra-releve-v14';
+const CACHE = 'wadra-releve-v15';
 /* Photo officielle de l'hôtel (page d'accueil) — pré-cachée en no-cors pour le hors-ligne */
 const HERO_URL = 'https://www.wadrabay.nc/images/photo3.jpg';
-/* Miniatures du catalogue d'équipements (notices techniques c01..c87) */
-const CATALOG_IMGS = Array.from({length: 87}, function (_, i) {
+/* Miniatures du catalogue d'équipements (notices techniques c01..c91 ; c92 sans notice) */
+const CATALOG_IMGS = Array.from({length: 91}, function (_, i) {
   return './catalog_img/c' + ('0' + (i + 1)).slice(-2) + '.jpg';
 });
 const ASSETS = [
