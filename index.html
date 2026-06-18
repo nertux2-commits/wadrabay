@@ -273,9 +273,14 @@ async function persistState(){
 }
 
 function touch(id){
+  state.ts = state.ts || {};
   state.dirty = state.dirty || {};
+  // Horodate la saisie locale : protège l'édition contre un écrasement par
+  // une version distante plus ancienne lors de la synchro ("dernière écriture gagne").
+  state.ts[id] = new Date().toISOString();
   state.dirty[id] = 1;
   scheduleSave();
+  if(window.Sync && window.Sync.kick){ try { window.Sync.kick(); } catch(e){} }
 }
 
 /* ====================== HELPERS ====================== */
@@ -601,7 +606,7 @@ async function duplicateEquip(equipId){
   // copier les données saisies (sauf le marqueur IA)
   const src = state.equip[equipId] || {};
   const copy = {};
-  ['statut','local','marque','modele','puissance','observations','qte'].forEach(k => { if(src[k] != null && src[k] !== '') copy[k] = src[k]; });
+  ['statut','local','marque','modele','puissance','observations','qte','regime','heuresJour','joursSem','consigne','consigneOn','catRef'].forEach(k => { if(src[k] != null && src[k] !== '') copy[k] = src[k]; });
   if(copy.marque == null && e.marque) copy.marque = e.marque;
   if(copy.modele == null && e.modele) copy.modele = e.modele;
   if(copy.puissance == null && e.puissance) copy.puissance = e.puissance;
@@ -624,6 +629,62 @@ function qteOf(e){
   let q = (f.qte != null && f.qte !== '') ? f.qte : (e.qte != null ? e.qte : 1);
   q = parseInt(q, 10);
   return (isNaN(q) || q < 1) ? 1 : q;
+}
+
+/* ====================== EXPLOITATION / BILAN DE PUISSANCE ====================== */
+/* Régimes préréglés : remplissent heures/jour + jours/semaine (extrapolés × 52 sem.) */
+const REGIMES = [
+  {key:'',      label:'— (non renseigné)',        hj:'', js:''},
+  {key:'24x7',  label:'24 h/24 · 7 j/sem',         hj:24, js:7},
+  {key:'jour',  label:'Journée ~12 h · 7 j/sem',   hj:12, js:7},
+  {key:'serv',  label:'Service ~10 h · 7 j/sem',   hj:10, js:7},
+  {key:'bur',   label:'Bureau 8 h · 5 j/sem',      hj:8,  js:5},
+  {key:'lav',   label:'Laverie 8 h · 6 j/sem',     hj:8,  js:6},
+  {key:'nuit',  label:'Nuit ~10 h · 7 j/sem',      hj:10, js:7},
+  {key:'perso', label:'Personnalisé',              hj:'', js:''}
+];
+function catRefOf(e){
+  const f = state.equip[e.id] || {};
+  if(!f.catRef || !window.WADRA_CATALOG) return null;
+  return (WADRA_CATALOG.items || []).find(x => x.id === f.catRef) || null;
+}
+/* Détecte les équipements ayant une T° de consigne (clim, froid, ECS, piscine…) */
+function isThermal(e){
+  const f = state.equip[e.id] || {};
+  const cat = (catRefOf(e) || {}).cat || '';
+  if(/Climatisation/i.test(cat)) return true;
+  const hay = ((e.name||'') + ' ' + (f.marque||'') + ' ' + (f.modele||'') + ' ' + (f.observations||'')).toLowerCase();
+  return /clim|froid|chambre froide|congel|frigo|réfrig|refrig|\becs\b|eau chaude|ballon|chauffe|\bcta\b|pompe à chaleur|\bpac\b|\bfour\b|étuve|piscine|lagon|frigorifique|groupe.?froid/.test(hay);
+}
+function pUnitOf(e){
+  const f = state.equip[e.id] || {};
+  const raw = (f.puissance != null && f.puissance !== '') ? f.puissance : (e.puissance || '');
+  const p = parseFloat(String(raw).replace(',', '.'));
+  return isNaN(p) ? 0 : p;
+}
+/* Bilan d'un équipement : P installée (kW) et énergie annuelle estimée (kWh/an) */
+function equipEnergy(e){
+  const f = state.equip[e.id] || {};
+  const q = qteOf(e);
+  const pu = pUnitOf(e);
+  const pInst = pu * q;
+  const hj = parseFloat(String(f.heuresJour||'').replace(',', '.'));
+  const js = parseFloat(String(f.joursSem||'').replace(',', '.'));
+  const hasDur = !isNaN(hj) && hj > 0 && !isNaN(js) && js > 0;
+  const kwhYear = hasDur ? pInst * hj * js * 52 : null;
+  return {q, pu, pInst, hj:isNaN(hj)?null:hj, js:isNaN(js)?null:js, kwhYear};
+}
+function fmtNum(n, d){
+  if(n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:d||0, maximumFractionDigits:d||0});
+}
+function bilanLineHTML(e){
+  const ee = equipEnergy(e);
+  let s = '⚡ P installée : ' + fmtNum(ee.pu, 2) + ' kW';
+  s += (ee.q > 1) ? (' × ' + ee.q + ' = <b>' + fmtNum(ee.pInst, 2) + ' kW</b>') : ' (×1)';
+  if(ee.kwhYear != null) s += ' · ≈ <b>' + fmtNum(ee.kwhYear, 0) + ' kWh/an</b>';
+  else s += ' · <span class="muted">renseigner h/jour et j/sem pour le kWh/an</span>';
+  return s;
 }
 
 /* ====================== FEUILLE D'ACTION (modale, remplace prompt/confirm) ====================== */
@@ -713,6 +774,10 @@ function renderHeader(){
 
   if(view.name === 'home'){
     h.innerHTML = '<div class="htitle">Revue Énergétique — Équipements</div>';
+  } else if(view.name === 'bilan'){
+    h.innerHTML = '<button class="hbtn" id="goHomeB">' + IC.back + '</button>' +
+      '<div class="htitle">Bilan de puissance</div>';
+    $('goHomeB').onclick = () => nav('home');
   } else if(view.name === 'td'){
     const z = findZone(view.tdId);
     h.innerHTML = '<button class="hbtn" id="goHome">' + IC.back + '</button>' +
@@ -759,6 +824,10 @@ function renderHome(){
     (state.meta.updated ? ' · enreg. ' + new Date(state.meta.updated).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '') +
     '</div></div>';
 
+  html += '<button class="btn primary" id="goBilan" style="margin-bottom:12px">📊 Bilan de puissance · pièce / TD / hôtel</button>';
+
+  html += '<div class="panel" id="storPanel"><div class="tiny muted">Stockage…</div></div>';
+
   if(self.WADRA_PLAN_MASSE && self.WADRA_PLAN_MASSE.length){
     html += '<div class="row-item" id="pmRow">' +
       '<div class="row-icon">🗺</div>' +
@@ -786,6 +855,8 @@ function renderHome(){
     r.onclick = () => { view.tdId = r.dataset.z; nav('td'); };
   });
   if($('pmRow')) $('pmRow').onclick = () => openStatic(self.WADRA_PLAN_MASSE, 0);
+  if($('goBilan')) $('goBilan').onclick = () => nav('bilan');
+  fillStorage();
 }
 
 function countsTD(z){
@@ -954,6 +1025,29 @@ function renderEquip(){
     '<textarea id="obsInput" placeholder="État, remarques…">' + esc(f.observations || '') + '</textarea></label>' +
     '</div>';
 
+  // ---- Panneau Exploitation (alimente le bilan de puissance automatisé) ----
+  const showConsigne = (f.consigneOn != null) ? !!f.consigneOn : isThermal(e);
+  html += '<div class="panel">' +
+    '<h2>Exploitation (bilan de puissance)</h2>' +
+    '<label class="fld"><span>Régime de fonctionnement</span>' +
+    '<select id="regimeSelect">' +
+    REGIMES.map(rg => '<option value="' + rg.key + '"' + ((f.regime||'') === rg.key ? ' selected' : '') + '>' + esc(rg.label) + '</option>').join('') +
+    '</select></label>' +
+    '<div class="row2">' +
+    '<label class="fld"><span>Heures / jour</span>' +
+    '<input type="number" inputmode="decimal" min="0" max="24" step="0.5" id="hjInput" placeholder="ex. 8" value="' + esc(f.heuresJour || '') + '"></label>' +
+    '<label class="fld"><span>Jours / semaine</span>' +
+    '<input type="number" inputmode="numeric" min="0" max="7" step="1" id="jsInput" placeholder="ex. 6" value="' + esc(f.joursSem || '') + '"></label>' +
+    '</div>' +
+    '<label class="fld" style="margin-bottom:6px"><span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1a2025">' +
+    '<input type="checkbox" id="consToggle"' + (showConsigne ? ' checked' : '') + ' style="width:auto;margin:0;transform:scale(1.2)"> Température de consigne applicable</span></label>' +
+    '<div id="consWrap"' + (showConsigne ? '' : ' style="display:none"') + '>' +
+    '<label class="fld"><span>Température de consigne (°C)</span>' +
+    '<input type="text" inputmode="decimal" id="consInput" placeholder="ex. 24 (clim) · 3 (chambre froide) · 60 (ECS)" value="' + esc(f.consigne || '') + '"></label>' +
+    '</div>' +
+    '<div class="consigne" id="kwhLine">' + bilanLineHTML(e) + '</div>' +
+    '</div>';
+
   html += '<div class="panel">' +
     '<h2>Plaque signalétique</h2>' +
     '<div class="photos" id="ph_plate"></div>' +
@@ -1017,6 +1111,40 @@ function renderEquip(){
     touch('equip:' + e.id);
   });
 
+  // ---- Exploitation : régime, durée, consigne ----
+  if($('regimeSelect')) $('regimeSelect').addEventListener('change', function(){
+    const rg = REGIMES.find(x => x.key === this.value);
+    state.equip[e.id].regime = this.value;
+    if(rg && rg.key && rg.key !== 'perso'){
+      state.equip[e.id].heuresJour = String(rg.hj);
+      state.equip[e.id].joursSem = String(rg.js);
+    }
+    touch('equip:' + e.id);
+    renderEquip();
+  });
+  if($('hjInput')) $('hjInput').addEventListener('input', function(){
+    state.equip[e.id].heuresJour = this.value;
+    if(state.equip[e.id].regime && state.equip[e.id].regime !== 'perso') state.equip[e.id].regime = 'perso';
+    touch('equip:' + e.id);
+    if($('kwhLine')) $('kwhLine').innerHTML = bilanLineHTML(e);
+  });
+  if($('jsInput')) $('jsInput').addEventListener('input', function(){
+    state.equip[e.id].joursSem = this.value;
+    if(state.equip[e.id].regime && state.equip[e.id].regime !== 'perso') state.equip[e.id].regime = 'perso';
+    touch('equip:' + e.id);
+    if($('kwhLine')) $('kwhLine').innerHTML = bilanLineHTML(e);
+  });
+  if($('consToggle')) $('consToggle').addEventListener('change', function(){
+    state.equip[e.id].consigneOn = this.checked;
+    if(!this.checked) state.equip[e.id].consigne = '';
+    touch('equip:' + e.id);
+    renderEquip();
+  });
+  if($('consInput')) $('consInput').addEventListener('input', function(){
+    state.equip[e.id].consigne = this.value;
+    touch('equip:' + e.id);
+  });
+
   if($('validerPW')){
     $('validerPW').onclick = () => {
       state.equip[e.id].pwAuto = false;
@@ -1051,6 +1179,95 @@ function renderStripKind(equipId, plate){
   if(ab) ab.onclick = () => triggerPhoto(equipId, plate);
 }
 
+/* ====================== RENDU : BILAN DE PUISSANCE ====================== */
+function bilanTotals(){
+  let pInst = 0, kwh = 0, withDur = 0, total = 0, missP = 0;
+  TREE.forEach(z => z.rooms.forEach(r => r.equipment.forEach(e => {
+    total++;
+    const ee = equipEnergy(e);
+    pInst += ee.pInst;
+    if(ee.pu === 0) missP++;
+    if(ee.kwhYear != null){ kwh += ee.kwhYear; withDur++; }
+  })));
+  return {pInst, kwh, withDur, total, missP};
+}
+function bilanStat(label, val){
+  return '<div style="flex:1;min-width:130px;background:#f3f7f6;border-radius:11px;padding:10px 12px">' +
+    '<div class="tiny muted">' + esc(label) + '</div>' +
+    '<div style="font-size:18px;font-weight:800;color:#0d7a6f">' + val + '</div></div>';
+}
+function renderBilan(){
+  const T = bilanTotals();
+  let html = '<div class="panel">' +
+    '<h2>Bilan de puissance — Hôtel</h2>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">' +
+    bilanStat('Puissance installée', fmtNum(T.pInst, 1) + ' kW') +
+    bilanStat('Énergie estimée', fmtNum(T.kwh, 0) + ' kWh/an') +
+    '</div>' +
+    '<div class="tiny muted" style="margin-top:8px">' + T.withDur + '/' + T.total + ' équipements avec durée renseignée' +
+    (T.missP ? ' · ' + T.missP + ' sans puissance' : '') + '</div>' +
+    '<button class="btn primary" id="expCSV" style="margin-top:11px">⬇️ Exporter le bilan (CSV)</button>' +
+    '</div>';
+  TREE.forEach(z => {
+    let zP = 0, zK = 0, zN = 0;
+    z.rooms.forEach(r => r.equipment.forEach(e => { const ee = equipEnergy(e); zP += ee.pInst; if(ee.kwhYear != null) zK += ee.kwhYear; zN++; }));
+    if(!zN) return;
+    html += '<div class="panel"><h2 style="font-size:15px">' + esc(z.name) + '</h2>' +
+      '<div class="tiny muted" style="margin-bottom:4px">' + fmtNum(zP, 1) + ' kW installés · ≈ ' + fmtNum(zK, 0) + ' kWh/an</div>';
+    z.rooms.forEach(r => {
+      let rP = 0, rK = 0, rN = 0, rHasDur = false;
+      r.equipment.forEach(e => { const ee = equipEnergy(e); rP += ee.pInst; if(ee.kwhYear != null){ rK += ee.kwhYear; rHasDur = true; } rN++; });
+      if(!rN) return;
+      html += '<div style="padding:7px 0;border-top:1px solid #eef1f2">' +
+        '<div style="display:flex;justify-content:space-between;font-size:13.5px"><b>' + esc(r.name) + '</b><span>' + fmtNum(rP, 2) + ' kW</span></div>' +
+        '<div class="tiny muted">' + rN + ' équip.' + (rHasDur ? ' · ≈ ' + fmtNum(rK, 0) + ' kWh/an' : '') + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  });
+  html += '<div class="tiny muted" style="text-align:center;padding:4px 8px 16px">Énergie annuelle = P installée × heures/jour × jours/semaine × 52. Les valeurs sans durée renseignée ne sont pas comptées dans les kWh/an.</div>';
+  $('app').innerHTML = html;
+  $('expCSV').onclick = exportBilanCSV;
+}
+function csvCell(v){ v = (v == null ? '' : String(v)); if(/[";\r\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"'; return v; }
+function csvNum(n){ return (n == null || isNaN(n)) ? '' : String(n).replace('.', ','); }
+function exportBilanCSV(){
+  const rows = [['TD','Piece','Equipement','Marque','Modele','Statut','Qte','P unitaire (kW)','P installee (kW)','Consigne (C)','h/jour','j/semaine','kWh/an','Observations']];
+  TREE.forEach(z => z.rooms.forEach(r => r.equipment.forEach(e => {
+    const f = state.equip[e.id] || {};
+    const ee = equipEnergy(e);
+    rows.push([z.name, r.name, e.name, f.marque || '', f.modele || '', f.statut || '', ee.q,
+      csvNum(ee.pu), csvNum(ee.pInst), f.consigne || '', f.heuresJour || '', f.joursSem || '',
+      ee.kwhYear != null ? Math.round(ee.kwhYear) : '', (f.observations || '').replace(/\s+/g, ' ').trim()]);
+  })));
+  const csv = rows.map(r => r.map(csvCell).join(';')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bilan_puissance_wadrabay_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('Bilan CSV exporté');
+}
+
+/* ====================== STOCKAGE (capacité de l'appareil) ====================== */
+async function fillStorage(){
+  const el = $('storPanel');
+  if(!el) return;
+  let usage = 0, quota = 0, persisted = false;
+  try { if(navigator.storage && navigator.storage.estimate){ const est = await navigator.storage.estimate(); usage = est.usage || 0; quota = est.quota || 0; } } catch(e){}
+  try { if(navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted(); } catch(e){}
+  const mb = u => fmtNum(u / 1048576, u < 10485760 ? 1 : 0);
+  const pctU = quota ? Math.min(100, Math.round(usage / quota * 100)) : 0;
+  el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+    '<b style="font-size:14px">Stockage de l\'appareil</b>' +
+    '<span class="tiny muted">' + mb(usage) + ' Mo' + (quota ? (' / ' + mb(quota) + ' Mo') : '') + '</span></div>' +
+    '<div class="bar"><i style="width:' + pctU + '%"></i></div>' +
+    '<div class="tiny muted" style="margin-top:6px">' + Object.keys(photos).length + ' photo(s) en mémoire · ' +
+    (persisted ? 'mémoire protégée ✅' : 'mémoire non protégée — ouvrez l\'app régulièrement et synchronisez') + '</div>';
+}
+
 /* ====================== NAVIGATION ====================== */
 function nav(name){
   view.name = name;
@@ -1058,6 +1275,7 @@ function nav(name){
   window.scrollTo(0, 0);
   renderHeader();
   if(name === 'home') renderHome();
+  else if(name === 'bilan') renderBilan();
   else if(name === 'td') renderTD();
   else if(name === 'room') renderRoom();
   else if(name === 'equip') renderEquip();
@@ -1110,6 +1328,10 @@ async function seedMission1(){
 
 /* ====================== DÉMARRAGE ====================== */
 async function boot(){
+  // Demande au navigateur de protéger les données locales contre l'éviction
+  // automatique (augmente la fiabilité et le quota de stockage sur iOS/Android).
+  try { if(navigator.storage && navigator.storage.persist){ await navigator.storage.persist(); } } catch(e){}
+
   idbOK = await idbOpen();
 
   // Charger état
