@@ -686,6 +686,21 @@ function bilanLineHTML(e){
   else s += ' · <span class="muted">renseigner h/jour et j/sem pour le kWh/an</span>';
   return s;
 }
+/* Coefficient pièce : nb d'unités identiques (bungalows/chambres de ce type).
+   On relève 1 unité-type ; le bilan multiplie P et kWh/an par ce coefficient. */
+function roomUnits(roomId){
+  const S = ensureStruct();
+  const ov = S.rooms[roomId] || {};
+  let n = parseInt(ov.units, 10);
+  return (isNaN(n) || n < 1) ? 1 : n;
+}
+function setRoomUnits(roomId, n){
+  const S = ensureStruct();
+  let v = parseInt(n, 10);
+  if(isNaN(v) || v < 1) v = 1;
+  S.rooms[roomId] = Object.assign({}, S.rooms[roomId], {units: v});
+  structDirty();
+}
 
 /* ====================== FEUILLE D'ACTION (modale, remplace prompt/confirm) ====================== */
 let sheetCloseTimer = null;
@@ -907,10 +922,11 @@ function renderTD(){
   z.rooms.forEach(r => {
     const rc = r.equipment.length;
     const rd = r.equipment.filter(e => (state.equip[e.id] || {}).statut).length;
+    const ru = roomUnits(r.id);
     html += '<div class="row-item" data-r="' + r.id + '">' +
       '<div class="row-icon">📍</div>' +
       '<div class="row-body">' +
-      '<div class="row-title">' + esc(r.name) + '</div>' +
+      '<div class="row-title">' + esc(r.name) + (ru > 1 ? ' <span style="color:#0d7a6f;font-weight:800">×' + ru + '</span>' : '') + '</div>' +
       '<div class="row-desc">' + rc + ' équipements · ' + rd + ' traités</div>' +
       '</div>' +
       '<button class="rowact" data-ract="' + r.id + '">⋯</button>' +
@@ -940,9 +956,15 @@ function renderRoom(){
   const z = findZone(view.tdId);
   const r = findRoom(view.tdId, view.roomId);
 
+  const ru = roomUnits(r.id);
   let html = '<div class="panel">' +
     '<h2>' + esc(r.name) + '</h2>' +
     '<div class="tiny muted">' + z.name + '</div>' +
+    '<label class="fld" style="margin:10px 0 0"><span>Nombre d\'unités identiques (bungalows / chambres de ce type)</span>' +
+    '<input type="number" inputmode="numeric" min="1" step="1" id="roomUnitsInput" value="' + ru + '"></label>' +
+    '<div class="tiny muted" id="roomUnitsHint">' +
+    (ru > 1 ? ('⚡ Tu relèves 1 unité-type — le bilan multiplie cette pièce par ' + ru + '.') : 'Relève 1 unité-type, puis indique ici combien il en existe au total.') +
+    '</div>' +
     '</div>';
 
   html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Équipements</h2>';
@@ -974,6 +996,14 @@ function renderRoom(){
   });
 
   $('addEquip').onclick = () => sheetCatalogPicker(view.roomId, r.name);
+
+  if($('roomUnitsInput')) $('roomUnitsInput').addEventListener('input', function(){
+    setRoomUnits(r.id, this.value);
+    const n = roomUnits(r.id);
+    if($('roomUnitsHint')) $('roomUnitsHint').textContent =
+      (n > 1) ? ('⚡ Tu relèves 1 unité-type — le bilan multiplie cette pièce par ' + n + '.')
+              : 'Relève 1 unité-type, puis indique ici combien il en existe au total.';
+  });
 }
 
 /* ====================== RENDU : ÉQUIPEMENT ====================== */
@@ -1182,13 +1212,16 @@ function renderStripKind(equipId, plate){
 /* ====================== RENDU : BILAN DE PUISSANCE ====================== */
 function bilanTotals(){
   let pInst = 0, kwh = 0, withDur = 0, total = 0, missP = 0;
-  TREE.forEach(z => z.rooms.forEach(r => r.equipment.forEach(e => {
-    total++;
-    const ee = equipEnergy(e);
-    pInst += ee.pInst;
-    if(ee.pu === 0) missP++;
-    if(ee.kwhYear != null){ kwh += ee.kwhYear; withDur++; }
-  })));
+  TREE.forEach(z => z.rooms.forEach(r => {
+    const u = roomUnits(r.id);
+    r.equipment.forEach(e => {
+      total++;
+      const ee = equipEnergy(e);
+      pInst += ee.pInst * u;
+      if(ee.pu === 0) missP++;
+      if(ee.kwhYear != null){ kwh += ee.kwhYear * u; withDur++; }
+    });
+  }));
   return {pInst, kwh, withDur, total, missP};
 }
 function bilanStat(label, val){
@@ -1210,36 +1243,40 @@ function renderBilan(){
     '</div>';
   TREE.forEach(z => {
     let zP = 0, zK = 0, zN = 0;
-    z.rooms.forEach(r => r.equipment.forEach(e => { const ee = equipEnergy(e); zP += ee.pInst; if(ee.kwhYear != null) zK += ee.kwhYear; zN++; }));
+    z.rooms.forEach(r => { const u = roomUnits(r.id); r.equipment.forEach(e => { const ee = equipEnergy(e); zP += ee.pInst * u; if(ee.kwhYear != null) zK += ee.kwhYear * u; zN++; }); });
     if(!zN) return;
     html += '<div class="panel"><h2 style="font-size:15px">' + esc(z.name) + '</h2>' +
       '<div class="tiny muted" style="margin-bottom:4px">' + fmtNum(zP, 1) + ' kW installés · ≈ ' + fmtNum(zK, 0) + ' kWh/an</div>';
     z.rooms.forEach(r => {
+      const u = roomUnits(r.id);
       let rP = 0, rK = 0, rN = 0, rHasDur = false;
-      r.equipment.forEach(e => { const ee = equipEnergy(e); rP += ee.pInst; if(ee.kwhYear != null){ rK += ee.kwhYear; rHasDur = true; } rN++; });
+      r.equipment.forEach(e => { const ee = equipEnergy(e); rP += ee.pInst * u; if(ee.kwhYear != null){ rK += ee.kwhYear * u; rHasDur = true; } rN++; });
       if(!rN) return;
       html += '<div style="padding:7px 0;border-top:1px solid #eef1f2">' +
-        '<div style="display:flex;justify-content:space-between;font-size:13.5px"><b>' + esc(r.name) + '</b><span>' + fmtNum(rP, 2) + ' kW</span></div>' +
-        '<div class="tiny muted">' + rN + ' équip.' + (rHasDur ? ' · ≈ ' + fmtNum(rK, 0) + ' kWh/an' : '') + '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:13.5px"><b>' + esc(r.name) + (u > 1 ? ' <span style="color:#0d7a6f">×' + u + '</span>' : '') + '</b><span>' + fmtNum(rP, 2) + ' kW</span></div>' +
+        '<div class="tiny muted">' + rN + ' équip.' + (u > 1 ? ' × ' + u + ' unités' : '') + (rHasDur ? ' · ≈ ' + fmtNum(rK, 0) + ' kWh/an' : '') + '</div>' +
         '</div>';
     });
     html += '</div>';
   });
-  html += '<div class="tiny muted" style="text-align:center;padding:4px 8px 16px">Énergie annuelle = P installée × heures/jour × jours/semaine × 52. Les valeurs sans durée renseignée ne sont pas comptées dans les kWh/an.</div>';
+  html += '<div class="tiny muted" style="text-align:center;padding:4px 8px 16px">Énergie annuelle = P installée × heures/jour × jours/semaine × 52, multipliée par le nombre d\'unités identiques de la pièce (× N). Les valeurs sans durée renseignée ne sont pas comptées dans les kWh/an.</div>';
   $('app').innerHTML = html;
   $('expCSV').onclick = exportBilanCSV;
 }
 function csvCell(v){ v = (v == null ? '' : String(v)); if(/[";\r\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"'; return v; }
 function csvNum(n){ return (n == null || isNaN(n)) ? '' : String(n).replace('.', ','); }
 function exportBilanCSV(){
-  const rows = [['TD','Piece','Equipement','Marque','Modele','Statut','Qte','P unitaire (kW)','P installee (kW)','Consigne (C)','h/jour','j/semaine','kWh/an','Observations']];
-  TREE.forEach(z => z.rooms.forEach(r => r.equipment.forEach(e => {
-    const f = state.equip[e.id] || {};
-    const ee = equipEnergy(e);
-    rows.push([z.name, r.name, e.name, f.marque || '', f.modele || '', f.statut || '', ee.q,
-      csvNum(ee.pu), csvNum(ee.pInst), f.consigne || '', f.heuresJour || '', f.joursSem || '',
-      ee.kwhYear != null ? Math.round(ee.kwhYear) : '', (f.observations || '').replace(/\s+/g, ' ').trim()]);
-  })));
+  const rows = [['TD','Piece','Nb unites','Equipement','Marque','Modele','Statut','Qte','P unitaire (kW)','P installee unite (kW)','P totale (kW)','Consigne (C)','h/jour','j/semaine','kWh/an total','Observations']];
+  TREE.forEach(z => z.rooms.forEach(r => {
+    const u = roomUnits(r.id);
+    r.equipment.forEach(e => {
+      const f = state.equip[e.id] || {};
+      const ee = equipEnergy(e);
+      rows.push([z.name, r.name, u, e.name, f.marque || '', f.modele || '', f.statut || '', ee.q,
+        csvNum(ee.pu), csvNum(ee.pInst), csvNum(ee.pInst * u), f.consigne || '', f.heuresJour || '', f.joursSem || '',
+        ee.kwhYear != null ? Math.round(ee.kwhYear * u) : '', (f.observations || '').replace(/\s+/g, ' ').trim()]);
+    });
+  }));
   const csv = rows.map(r => r.map(csvCell).join(';')).join('\r\n');
   const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
