@@ -144,6 +144,7 @@ label.fld > span{display:block;font-size:12.5px;font-weight:600;color:#55606b;ma
 <main id="app"></main>
 
 <input type="file" id="camInput" accept="image/*" multiple hidden>
+<input type="file" id="camShot" accept="image/*" capture="environment" hidden>
 <input type="file" id="restoreInput" accept=".json,application/json" hidden>
 
 <div class="viewer hidden" id="viewer">
@@ -332,12 +333,15 @@ async function shrink(file){
 function triggerPhoto(key, plate){
   photoTargetKey = key;
   photoTargetPlate = !!plate;
-  $('camInput').click();
+  // Choix Caméra / Galerie : sous Android l'attribut "multiple" masque l'appareil
+  // photo, donc on propose explicitement les deux entrées (capture vs galerie).
+  sheetActions('Ajouter une photo', [
+    {label:'📷  Prendre une photo', cb:()=> $('camShot').click()},
+    {label:'🖼️  Choisir dans la galerie', cb:()=> $('camInput').click()}
+  ]);
 }
 
-$('camInput').addEventListener('change', async function(){
-  const files = [...this.files];
-  this.value = '';
+async function processPhotoFiles(files){
   if(!files.length || !photoTargetKey) return;
   toast('Traitement ' + files.length + ' photo(s)…');
 
@@ -356,7 +360,10 @@ $('camInput').addEventListener('change', async function(){
   renderStripKind(photoTargetKey, false);
   toast('Photo(s) enregistrée(s)');
   touch('photo');
-});
+}
+
+$('camInput').addEventListener('change', function(){ const files = [...this.files]; this.value = ''; processPhotoFiles(files); });
+$('camShot').addEventListener('change', function(){ const files = [...this.files]; this.value = ''; processPhotoFiles(files); });
 
 async function deletePhoto(id){
   const p = photos[id];
