@@ -635,6 +635,7 @@ function qteOf(e){
 /* Régimes préréglés : remplissent heures/jour + jours/semaine (extrapolés × 52 sem.) */
 const REGIMES = [
   {key:'',      label:'— (non renseigné)',        hj:'', js:''},
+  {key:'arret', label:'À l\'arrêt · non utilisé',  hj:0,  js:0},
   {key:'24x7',  label:'24 h/24 · 7 j/sem',         hj:24, js:7},
   {key:'jour',  label:'Journée ~12 h · 7 j/sem',   hj:12, js:7},
   {key:'serv',  label:'Service ~10 h · 7 j/sem',   hj:10, js:7},
@@ -1073,7 +1074,9 @@ function renderEquip(){
     '<input type="checkbox" id="consToggle"' + (showConsigne ? ' checked' : '') + ' style="width:auto;margin:0;transform:scale(1.2)"> Température de consigne applicable</span></label>' +
     '<div id="consWrap"' + (showConsigne ? '' : ' style="display:none"') + '>' +
     '<label class="fld"><span>Température de consigne (°C)</span>' +
-    '<input type="text" inputmode="decimal" id="consInput" placeholder="ex. 24 (clim) · 3 (chambre froide) · 60 (ECS)" value="' + esc(f.consigne || '') + '"></label>' +
+    '<div style="display:flex;gap:8px;align-items:stretch">' +
+    '<button type="button" id="consSign" title="Inverser le signe (+/−)" style="flex:0 0 auto;padding:0 16px;border:1px solid #f0dcb0;border-radius:9px;background:#fff;font-size:20px;font-weight:700;line-height:1;cursor:pointer">±</button>' +
+    '<input type="text" inputmode="decimal" id="consInput" placeholder="ex. 24 (clim) · 3 (chambre froide) · -18 (congél.) · 60 (ECS)" value="' + esc(f.consigne || '') + '" style="flex:1"></div></label>' +
     '</div>' +
     '<div class="consigne" id="kwhLine">' + bilanLineHTML(e) + '</div>' +
     '</div>';
@@ -1173,6 +1176,16 @@ function renderEquip(){
   if($('consInput')) $('consInput').addEventListener('input', function(){
     state.equip[e.id].consigne = this.value;
     touch('equip:' + e.id);
+  });
+  if($('consSign')) $('consSign').addEventListener('click', function(){
+    const inp = $('consInput'); if(!inp) return;
+    let v = (inp.value || '').trim();
+    if(v === '' || v === '-' || v === '−'){ inp.value = '-'; }
+    else if(v.charAt(0) === '-' || v.charAt(0) === '−'){ inp.value = v.slice(1); }
+    else { inp.value = '-' + v; }
+    state.equip[e.id].consigne = inp.value;
+    touch('equip:' + e.id);
+    inp.focus();
   });
 
   if($('validerPW')){
