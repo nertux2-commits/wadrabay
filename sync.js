@@ -217,6 +217,52 @@
     return chain;
   }
 
+  /* ---- fusion de structure (anti-perte) ----------------------------------
+     `struct` est une entrée unique partagée : le simple "dernière écriture
+     gagne" faisait perdre les ajouts faits en parallèle sur deux téléphones
+     (cause des relevés "orphelins"). On fusionne donc toujours :
+     - addedRooms / addedEquip : union par id (aucune perte, tri par id) ;
+     - rooms / equip (renommage/déplacement/suppression) : union des clés,
+       en cas de conflit sur un même champ la version la plus récente gagne.
+     Les suppressions restent des tombstones (del:true) : la fusion ne
+     ressuscite donc jamais un élément supprimé. */
+  function normStruct(s) {
+    s = s || {};
+    return { rooms: s.rooms || {}, equip: s.equip || {},
+             addedRooms: s.addedRooms || [], addedEquip: s.addedEquip || [] };
+  }
+  function stableStr(v) {
+    if (Array.isArray(v)) { var a = []; for (var i = 0; i < v.length; i++) a.push(stableStr(v[i])); return "[" + a.join(",") + "]"; }
+    if (v && typeof v === "object") {
+      var ks = Object.keys(v).sort(), p = [];
+      for (var j = 0; j < ks.length; j++) p.push(JSON.stringify(ks[j]) + ":" + stableStr(v[ks[j]]));
+      return "{" + p.join(",") + "}";
+    }
+    return JSON.stringify(v === undefined ? null : v);
+  }
+  function unionById(prefer, other) {
+    var by = {};
+    (prefer || []).forEach(function (it) { if (it && it.id) by[it.id] = it; });
+    (other || []).forEach(function (it) { if (it && it.id && !by[it.id]) by[it.id] = it; });
+    return Object.keys(by).sort().map(function (id) { return by[id]; });
+  }
+  function mergeMaps(win, lose) {
+    var out = {}, k;
+    for (k in lose) { if (lose.hasOwnProperty(k)) out[k] = Object.assign({}, lose[k]); }
+    for (k in win) { if (win.hasOwnProperty(k)) out[k] = Object.assign({}, out[k], win[k]); }
+    return out;
+  }
+  function mergeStruct(loc, rem, remoteNewer) {
+    loc = normStruct(loc); rem = normStruct(rem);
+    var win = remoteNewer ? rem : loc, lose = remoteNewer ? loc : rem;
+    return {
+      rooms: mergeMaps(win.rooms, lose.rooms),
+      equip: mergeMaps(win.equip, lose.equip),
+      addedRooms: unionById(win.addedRooms, lose.addedRooms),
+      addedEquip: unionById(win.addedEquip, lose.addedEquip)
+    };
+  }
+
   /* -------------------- RÉCEPTION -------------------- */
   function pull() {
     if (!signedIn || !navigator.onLine) return Promise.resolve();
@@ -234,7 +280,7 @@
       if (row.body && typeof row.body.auditeur === "string") state.meta.auditeur = row.body.auditeur;
       return;
     }
-    if (row.type === "struct") { if (row.body) state.struct = row.body; return; }
+    if (row.type === "struct") { if (row.body) state.struct = mergeStruct(state.struct, row.body, true); return; }
     if (row.type === "zone") { state.zones[row.id.slice(5)] = row.body || {}; return; }
     if (row.type === "equip") {
       var k = row.id.slice(6);
@@ -274,6 +320,23 @@
             return; // notre propre écho
           }
           var localTs = state.ts[row.id];
+          if (row.id === "struct") {
+            // structure : toujours FUSIONNER — jamais écraser, jamais ignorer
+            var remoteNewer = !(localTs && T(localTs) >= T(row.updated_at));
+            var before = stableStr(normStruct(state.struct));
+            var merged = mergeStruct(state.struct, row.body || {}, remoteNewer);
+            var mergedStr = stableStr(merged);
+            state.struct = merged;
+            if (mergedStr !== before) changed = true;
+            if (mergedStr !== stableStr(normStruct(row.body))) {
+              // notre fusion est plus complète que la base -> on la poussera
+              state.ts[row.id] = nowISO(); state.dirty[row.id] = 1;
+            } else {
+              if (T(row.updated_at) > T(localTs)) state.ts[row.id] = row.updated_at;
+              delete state.dirty[row.id];
+            }
+            return;
+          }
           if (localTs && T(localTs) >= T(row.updated_at)) return; // local plus récent -> on garde (et on poussera)
           applyEntry(row);
           state.ts[row.id] = row.updated_at;
