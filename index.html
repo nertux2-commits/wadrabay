@@ -643,6 +643,7 @@ function qteOf(e){
 const REGIMES = [
   {key:'',      label:'— (non renseigné)',        hj:'', js:''},
   {key:'arret', label:'À l\'arrêt · non utilisé',  hj:0,  js:0},
+  {key:'panne', label:'⚠️ En panne · HS',           hj:0,  js:0},
   {key:'24x7',  label:'24 h/24 · 7 j/sem',         hj:24, js:7},
   {key:'jour',  label:'Journée ~12 h · 7 j/sem',   hj:12, js:7},
   {key:'serv',  label:'Service ~10 h · 7 j/sem',   hj:10, js:7},
@@ -678,7 +679,8 @@ function equipEnergy(e){
   const pInst = pu * q;
   const hj = parseFloat(String(f.heuresJour||'').replace(',', '.'));
   const js = parseFloat(String(f.joursSem||'').replace(',', '.'));
-  const hasDur = !isNaN(hj) && hj > 0 && !isNaN(js) && js > 0;
+  /* hj/js explicitement à 0 (régimes « À l'arrêt » / « En panne ») => 0 kWh/an (documenté), pas « à renseigner » */
+  const hasDur = !isNaN(hj) && !isNaN(js) && hj >= 0 && js >= 0;
   const kwhYear = hasDur ? pInst * hj * js * 52 : null;
   return {q, pu, pInst, hj:isNaN(hj)?null:hj, js:isNaN(js)?null:js, kwhYear};
 }
@@ -980,12 +982,13 @@ function renderRoom(){
   r.equipment.forEach(e => {
     const f = state.equip[e.id] || {};
     const st = f.statut || '';
+    const hs = (f.regime === 'panne');
     const ph = photosFor(e.id);
     const qt = qteOf(e);
-    html += '<div class="row-item" data-e="' + e.id + '" style="border-left:5px solid #' + (st === 'ok' ? '1a9d5a' : 'c3cad0') + '">' +
-      '<div class="row-icon">' + (st === 'ok' ? '✓' : '⚡') + '</div>' +
+    html += '<div class="row-item" data-e="' + e.id + '" style="border-left:5px solid #' + (hs ? 'c0392b' : (st === 'ok' ? '1a9d5a' : 'c3cad0')) + '">' +
+      '<div class="row-icon">' + (hs ? '⚠️' : (st === 'ok' ? '✓' : '⚡')) + '</div>' +
       '<div class="row-body">' +
-      '<div class="row-title">' + esc(e.name) + (qt > 1 ? ' <span style="color:#0d7a6f;font-weight:800">×' + qt + '</span>' : '') + '</div>' +
+      '<div class="row-title">' + esc(e.name) + (qt > 1 ? ' <span style="color:#0d7a6f;font-weight:800">×' + qt + '</span>' : '') + (hs ? ' <span style="color:#c0392b;font-weight:800">HS</span>' : '') + '</div>' +
       '<div class="row-desc">' + esc(f.local || 'Local non spécifié') + ' · ' + ph.length + ' photo(s)</div>' +
       '</div>' +
       '<button class="rowact" data-eact="' + e.id + '">⋯</button>' +
