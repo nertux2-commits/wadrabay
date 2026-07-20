@@ -38,6 +38,7 @@
     state.zones = state.zones || {};      // entrées "zone:" reçues de la base partagée
     state.custom = state.custom || {};    // équipements ajoutés sur le terrain (par zone)
     state.struct = state.struct || {};    // modifications de structure (pièces/équip. ajout/déplacement/renommage/suppression)
+    state.mesures = state.mesures || {};  // campagne de mesures pince (module mesures.js)
     state.sync = state.sync || {};
     if (!state.sync.device) state.sync.device = "dev_" + Math.random().toString(36).slice(2, 9);
     state.sync.entriesPull = state.sync.entriesPull || "1970-01-01T00:00:00Z";
@@ -146,6 +147,14 @@
     if (id === "struct") { row.type = "struct"; row.body = state.struct || {}; return row; }
     if (id.indexOf("zone:") === 0) { row.type = "zone"; row.body = state.zones[id.slice(5)] || {}; return row; }
     if (id.indexOf("equip:") === 0) { row.type = "equip"; row.body = state.equip[id.slice(6)] || {}; return row; }
+    if (id.indexOf("mesure:") === 0) {
+      row.type = "mesure";
+      var mk = id.slice(7);
+      var mrec = (state.mesures || {})[mk];
+      if (!mrec) { row.deleted = true; row.body = {}; }
+      else row.body = mrec;
+      return row;
+    }
     if (id.indexOf("custom:") === 0) {
       row.type = "custom";
       var rest = id.slice(7), p = rest.split(":"), zone = p[0], cid = p[1];
@@ -285,6 +294,13 @@
     if (row.type === "equip") {
       var k = row.id.slice(6);
       if (row.deleted) delete state.equip[k]; else state.equip[k] = row.body || {};
+      return;
+    }
+    if (row.type === "mesure") {
+      state.mesures = state.mesures || {};
+      var mk2 = row.id.slice(7);
+      if (row.deleted) delete state.mesures[mk2];
+      else state.mesures[mk2] = row.body || {};
       return;
     }
     if (row.type === "custom") {
