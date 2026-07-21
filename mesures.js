@@ -25,7 +25,6 @@
   var GRP_AUTRE = "Autres points";
 
   var POINTS_BASE = [
-    {code:"ARR",        label:"Arrivée générale TGBT",                                grp:GRP_TGBT, zone:"z_tgbt",    reseau:"tri",  ord:1},
     {code:"TG-SG",      label:"Départ TG-SG — Services généraux (Bât. I)",            grp:GRP_TGBT, zone:"z_sg",      reseau:"tri",  ord:2},
     {code:"TD-LT1",     label:"Départ TD-LT1 — Bungalows lagune / villas",            grp:GRP_TGBT, zone:"z_lt1",     reseau:"tri",  ord:3},
     {code:"TD-LT4",     label:"Départ TD-LT4 — Chambres N/O + forêt",                 grp:GRP_TGBT, zone:"z_lt4",     reseau:"tri",  ord:4},
@@ -38,7 +37,6 @@
     {code:"POMPERIE",   label:"Départ POMPERIE (usage réel à noter en obs.)",         grp:GRP_TGBT, zone:"z_pomperie",reseau:"tri",  ord:11},
     {code:"TD-CUISINE",    label:"Tête TD-Cuisine (sous TG-C)",                       grp:GRP_SOUS, zone:null, reseau:"tri",  ord:20},
     {code:"LT-PISCINE",    label:"Tête LT-Piscine (sous TG-C)",                       grp:GRP_SOUS, zone:null, reseau:"tri",  ord:21},
-    {code:"LT-LAGUNARIUM", label:"Tête LT-Lagunarium (sous TD-SP) — talon eau de mer",grp:GRP_SOUS, zone:null, reseau:"tri",  ord:22},
     {code:"TEM-LAGUNE",  label:"Témoin bungalow lagune (préciser K… en obs.)",        grp:GRP_TEM,  zone:null, reseau:"mono", ord:30},
     {code:"TEM-CHAMBRE", label:"Témoin chambre bât. O (préciser n° en obs.)",         grp:GRP_TEM,  zone:null, reseau:"mono", ord:31},
     {code:"TEM-PLAGE",   label:"Témoin villa plage (préciser M… en obs.)",            grp:GRP_TEM,  zone:null, reseau:"mono", ord:32},
@@ -101,12 +99,21 @@
   function rowsOf(code) { return allRows().filter(function (r) { return r.point === code; }); }
   function num(v) { var n = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isNaN(n) ? null : n; }
 
-  /* tensions : U12/U23/U31 en tri (moyenne), U simple en mono */
+  /* tensions : en tri, mesurées soit entre phases (U12/U23/U31, mode "ll"),
+     soit phase→neutre (V1N/V2N/V3N, mode "ln") — équivalence U = √3·V.
+     Les anciennes mesures sans umode = mode "ll" (composées). */
+  function uModeOf(r) { return r.umode === "ln" ? "ln" : "ll"; }
   function uMoyOf(r) {
     if (r.reseau === "mono") { var um = num(r.u); return um == null ? 230 : um; }
     var us = [num(r.u), num(r.u2), num(r.u3)].filter(function (x) { return x != null; });
-    if (!us.length) return 400;
+    if (!us.length) return uModeOf(r) === "ln" ? 230 : 400;
     return us.reduce(function (s, x) { return s + x; }, 0) / us.length;
+  }
+  /* U équivalente entre phases (pour le calcul de P et les comparaisons) */
+  function uEqLL(r) {
+    if (r.reseau === "mono") return null;
+    var m = uMoyOf(r);
+    return uModeOf(r) === "ln" ? 1.732 * m : m;
   }
   function uDevOf(r) { /* écart % entre tensions composées (EN 50160 : déséquilibre ≤ 2 %) */
     if (r.reseau === "mono") return null;
@@ -119,15 +126,14 @@
   /* puissance d'un enregistrement (kW) */
   function pOf(r) {
     var cos = num(r.cosphi); if (cos == null) cos = 0.99;
-    var u = uMoyOf(r);
     if (r.reseau === "mono") {
       var i = num(r.i1); if (i == null) return null;
-      return u * i * cos / 1000;
+      return uMoyOf(r) * i * cos / 1000;
     }
     var is = [num(r.i1), num(r.i2), num(r.i3)].filter(function (x) { return x != null; });
     if (!is.length) return null;
     var im = is.reduce(function (s, x) { return s + x; }, 0) / is.length;
-    return 1.732 * u * im * cos / 1000;
+    return 1.732 * uEqLL(r) * im * cos / 1000;
   }
   function desOf(r) { /* déséquilibre % entre phases */
     if (r.reseau === "mono") return null;
@@ -193,7 +199,7 @@
       '</div></div>';
 
     html += '<button class="btn primary" id="mNew" style="background:#155e9c">➕ Nouvelle mesure</button>' +
-      '<button class="btn primary" id="mTour" style="background:#0d7a6f;margin-top:9px">🔄 Tournée TGBT guidée (arrivée + 10 départs)</button>';
+      '<button class="btn primary" id="mTour" style="background:#0d7a6f;margin-top:9px">🔄 Tournée guidée des 10 départs (mesure aux TD)</button>';
 
     html += '<div class="panel" style="margin-top:12px"><h2>Exports</h2>' +
       '<button class="btn sec" id="mExpBrut">⬇️ Export brut des saisies (xlsx)</button>' +
@@ -273,12 +279,14 @@
       point: V.point || (pts[0] && pts[0].code),
       date: nowDate(), heure: nowTime(),
       creneau: creneauFromTime(nowTime()),
-      reseau: null, u: "", u2: "", u3: "", cosphi: "0.99",
+      reseau: null, umode: "ln", u: "", u2: "", u3: "", cosphi: "0.99",
       i1: "", i2: "", i3: "", mf: false, obs: ""
     };
     var pdef = pointBy(cur.point) || {};
     var reseau = cur.reseau || pdef.reseau || "tri";
-    var uDef = reseau === "mono" ? "230" : "400";
+    var umode = uModeOf(cur);
+    var uDef = reseau === "mono" ? "230" : (umode === "ln" ? "230" : "400");
+    var uL = reseau === "mono" ? ["U (V)", "", ""] : (umode === "ln" ? ["V1-N (V)", "V2-N (V)", "V3-N (V)"] : ["U12 (V)", "U23 (V)", "U31 (V)"]);
     var inTour = V.tour >= 0;
     var tourPts = pts.filter(function (p) { return p.grp === GRP_TGBT; });
 
@@ -306,10 +314,14 @@
       '<label class="fld mTriOnly"><span>I L2 (A)</span><input type="text" inputmode="decimal" id="mI2" placeholder="A" value="' + esc(cur.i2 || "") + '"></label>' +
       '<label class="fld mTriOnly"><span>I L3 (A)</span><input type="text" inputmode="decimal" id="mI3" placeholder="A" value="' + esc(cur.i3 || "") + '"></label>' +
       '</div>' +
+      '<label class="fld mTriOnly"><span>Tension mesurée</span><select id="mUmode">' +
+      '<option value="ln"' + (umode === "ln" ? " selected" : "") + '>Phase → Neutre (V1-N / V2-N / V3-N, ~230 V)</option>' +
+      '<option value="ll"' + (umode === "ll" ? " selected" : "") + '>Entre phases (U12 / U23 / U31, ~400 V)</option>' +
+      '</select></label>' +
       '<div class="row2">' +
-      '<label class="fld"><span id="mULbl">' + (reseau === "mono" ? "U (V)" : "U12 (V)") + '</span><input type="text" inputmode="decimal" id="mU" placeholder="' + uDef + '" value="' + esc(cur.u || "") + '"></label>' +
-      '<label class="fld mTriOnly"><span>U23 (V)</span><input type="text" inputmode="decimal" id="mU2" placeholder="400" value="' + esc(cur.u2 || "") + '"></label>' +
-      '<label class="fld mTriOnly"><span>U31 (V)</span><input type="text" inputmode="decimal" id="mU3" placeholder="400" value="' + esc(cur.u3 || "") + '"></label>' +
+      '<label class="fld"><span id="mULbl">' + uL[0] + '</span><input type="text" inputmode="decimal" id="mU" placeholder="' + uDef + '" value="' + esc(cur.u || "") + '"></label>' +
+      '<label class="fld mTriOnly"><span id="mULbl2">' + uL[1] + '</span><input type="text" inputmode="decimal" id="mU2" placeholder="' + uDef + '" value="' + esc(cur.u2 || "") + '"></label>' +
+      '<label class="fld mTriOnly"><span id="mULbl3">' + uL[2] + '</span><input type="text" inputmode="decimal" id="mU3" placeholder="' + uDef + '" value="' + esc(cur.u3 || "") + '"></label>' +
       '</div>' +
       '<label class="fld"><span>cos φ</span><input type="text" inputmode="decimal" id="mCos" value="' + esc(cur.cosphi || "0.99") + '"></label>' +
       '<div class="consigne" id="mCalc">P ≈ —</div>' +
@@ -329,14 +341,20 @@
     var updCalc = function () {
       var r = readForm();
       var pw = pOf(r), dz = desOf(r), ud = uDevOf(r);
+      var ln = r.reseau === "tri" && uModeOf(r) === "ln";
       $("mCalc").innerHTML = "P ≈ <b>" + fmtP(pw) + "</b>" +
-        (r.reseau === "tri" && pw != null ? " · S ≈ " + fmtNum(pw / (num(r.cosphi) || 0.99), 1) + " kVA · U moy " + fmtNum(uMoyOf(r), 0) + " V" : "") +
+        (r.reseau === "tri" && pw != null ? " · S ≈ " + fmtNum(pw / (num(r.cosphi) || 0.99), 1) + " kVA · " +
+          (ln ? ("V moy " + fmtNum(uMoyOf(r), 0) + " V (U équiv. " + fmtNum(uEqLL(r), 0) + " V)") : ("U moy " + fmtNum(uMoyOf(r), 0) + " V")) : "") +
         (dz != null && dz >= 20 ? ' · <span style="color:#c0392b;font-weight:700">déséq. I ' + dz + "%</span>" : "") +
         (ud != null && ud >= 2 ? ' · <span style="color:#c0392b;font-weight:700">écart U ' + ud + "% (EN 50160 ≤ 2%)</span>" : "");
       var mono = $("mRes").value === "mono";
       document.querySelectorAll(".mTriOnly").forEach(function (el) { el.style.display = mono ? "none" : ""; });
-      if (!$("mU").value) $("mU").placeholder = mono ? "230" : "400";
-      if ($("mULbl")) $("mULbl").textContent = mono ? "U (V)" : "U12 (V)";
+      var md = $("mUmode") ? $("mUmode").value : "ln";
+      var ph = mono ? "230" : (md === "ln" ? "230" : "400");
+      ["mU", "mU2", "mU3"].forEach(function (id) { if ($(id) && !$(id).value) $(id).placeholder = ph; });
+      if ($("mULbl")) $("mULbl").textContent = mono ? "U (V)" : (md === "ln" ? "V1-N (V)" : "U12 (V)");
+      if ($("mULbl2")) $("mULbl2").textContent = md === "ln" ? "V2-N (V)" : "U23 (V)";
+      if ($("mULbl3")) $("mULbl3").textContent = md === "ln" ? "V3-N (V)" : "U31 (V)";
     };
     function readForm() {
       return {
@@ -346,7 +364,8 @@
         creneau: $("mCren").value,
         reseau: $("mRes").value,
         i1: $("mI1").value.trim(), i2: $("mI2").value.trim(), i3: $("mI3").value.trim(),
-        u: $("mU").value.trim() || ($("mRes").value === "mono" ? "230" : "400"),
+        umode: $("mUmode") ? $("mUmode").value : "ll",
+        u: $("mU").value.trim() || ($("mRes").value === "mono" ? "230" : ($("mUmode") && $("mUmode").value === "ln" ? "230" : "400")),
         u2: $("mU2") ? $("mU2").value.trim() : "",
         u3: $("mU3") ? $("mU3").value.trim() : "",
         cosphi: $("mCos").value.trim() || "0.99",
@@ -357,6 +376,7 @@
     }
     ["mI1", "mI2", "mI3", "mU", "mU2", "mU3", "mCos"].forEach(function (id) { if ($(id)) $(id).addEventListener("input", updCalc); });
     $("mRes").addEventListener("change", updCalc);
+    if ($("mUmode")) $("mUmode").addEventListener("change", updCalc);
     $("mTime").addEventListener("change", function () { $("mCren").value = creneauFromTime(this.value); });
     $("mPt").addEventListener("change", function () {
       var pd = pointBy(this.value) || {};
@@ -453,7 +473,7 @@
     if (!data.length) { toast("Aucune mesure à exporter"); return; }
     var aoa = [["Date", "Heure", "Jour", "Sem/WE", "Créneau", "Point", "Libellé", "Réseau",
       "I L1 (A)", "I L2 (A)", "I L3 (A)", "I moy (A)", "Déséq. I (%)",
-      "U12 (V)", "U23 (V)", "U31 (V)", "U moy (V)", "Écart U (%)", "cos φ",
+      "U1 (V)", "U2 (V)", "U3 (V)", "Réf. U", "U moy mesurée (V)", "U équiv. LL (V)", "Écart U (%)", "cos φ",
       "P (kW)", "S (kVA)", "Marche forcée", "Opérateur", "Observations"]];
     var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
     data.forEach(function (d) {
@@ -464,14 +484,17 @@
       aoa.push([r.date, r.heure, JOURS[new Date(r.date + "T12:00:00").getDay()], d.we ? "WE" : "semaine",
         creneauLabel(r.creneau), r.point, pd.label || "", r.reseau === "mono" ? "mono 230V" : "tri 400V",
         num(r.i1), num(r.i2), num(r.i3), im != null ? Math.round(im * 10) / 10 : null, d.dz,
-        num(r.u), num(r.u2), num(r.u3), Math.round(uMoyOf(r) * 10) / 10, uDevOf(r),
+        num(r.u), num(r.u2), num(r.u3),
+        r.reseau === "mono" ? "mono" : (uModeOf(r) === "ln" ? "phase-N" : "entre phases"),
+        Math.round(uMoyOf(r) * 10) / 10,
+        uEqLL(r) != null ? Math.round(uEqLL(r) * 10) / 10 : null, uDevOf(r),
         num(r.cosphi), d.p != null ? Math.round(d.p * 100) / 100 : null,
         d.s != null ? Math.round(d.s * 100) / 100 : null,
         r.mf ? "OUI" : "", r.op || "", (r.obs || "").replace(/\s+/g, " ").trim()]);
     });
     var wb = XLSX.utils.book_new();
     var ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = aoa[0].map(function (h, i) { return { wch: i === 6 || i === 23 ? 40 : Math.max(9, String(h).length + 2) }; });
+    ws["!cols"] = aoa[0].map(function (h, i) { return { wch: i === 6 || i === 25 ? 40 : Math.max(9, String(h).length + 2) }; });
     XLSX.utils.book_append_sheet(wb, ws, "Mesures");
     XLSX.writeFile(wb, "WADRA_Bay_Mesures_Pince_BRUT_" + nowDate() + ".xlsx");
     toast("Export brut téléchargé (" + data.length + " mesures)");
@@ -639,7 +662,7 @@
       var sum = 0; Object.keys(p.dep).forEach(function (c) { sum += p.dep[c]; });
       var parts = k.split("|");
       aoa5.push([parts[0], creneauLabel(parts[1]), nd, rnd(sum, 1), rnd(p.arr, 1),
-        (p.arr && nd >= 8) ? Math.round((sum - p.arr) / p.arr * 100) + " %" : (nd < 8 ? "passage incomplet" : "arrivée non mesurée")]);
+        (p.arr && nd >= 8) ? Math.round((sum - p.arr) / p.arr * 100) + " %" : (nd < 8 ? "passage incomplet" : "— bouclage via courbe de charge EEC (pas de mesure d'arrivée)")]);
     });
     aoa5.push([]);
     /* b) déséquilibres */
