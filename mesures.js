@@ -101,16 +101,29 @@
   function rowsOf(code) { return allRows().filter(function (r) { return r.point === code; }); }
   function num(v) { var n = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isNaN(n) ? null : n; }
 
+  /* tensions : U12/U23/U31 en tri (moyenne), U simple en mono */
+  function uMoyOf(r) {
+    if (r.reseau === "mono") { var um = num(r.u); return um == null ? 230 : um; }
+    var us = [num(r.u), num(r.u2), num(r.u3)].filter(function (x) { return x != null; });
+    if (!us.length) return 400;
+    return us.reduce(function (s, x) { return s + x; }, 0) / us.length;
+  }
+  function uDevOf(r) { /* écart % entre tensions composées (EN 50160 : déséquilibre ≤ 2 %) */
+    if (r.reseau === "mono") return null;
+    var us = [num(r.u), num(r.u2), num(r.u3)].filter(function (x) { return x != null; });
+    if (us.length < 2) return null;
+    var mx = Math.max.apply(null, us), mn = Math.min.apply(null, us);
+    var moy = us.reduce(function (s, x) { return s + x; }, 0) / us.length;
+    return moy > 0 ? Math.round((mx - mn) / moy * 1000) / 10 : 0;
+  }
   /* puissance d'un enregistrement (kW) */
   function pOf(r) {
     var cos = num(r.cosphi); if (cos == null) cos = 0.99;
-    var u = num(r.u);
+    var u = uMoyOf(r);
     if (r.reseau === "mono") {
-      if (u == null) u = 230;
       var i = num(r.i1); if (i == null) return null;
       return u * i * cos / 1000;
     }
-    if (u == null) u = 400;
     var is = [num(r.i1), num(r.i2), num(r.i3)].filter(function (x) { return x != null; });
     if (!is.length) return null;
     var im = is.reduce(function (s, x) { return s + x; }, 0) / is.length;
@@ -260,7 +273,7 @@
       point: V.point || (pts[0] && pts[0].code),
       date: nowDate(), heure: nowTime(),
       creneau: creneauFromTime(nowTime()),
-      reseau: null, u: "", cosphi: "0.99",
+      reseau: null, u: "", u2: "", u3: "", cosphi: "0.99",
       i1: "", i2: "", i3: "", mf: false, obs: ""
     };
     var pdef = pointBy(cur.point) || {};
@@ -294,9 +307,11 @@
       '<label class="fld mTriOnly"><span>I L3 (A)</span><input type="text" inputmode="decimal" id="mI3" placeholder="A" value="' + esc(cur.i3 || "") + '"></label>' +
       '</div>' +
       '<div class="row2">' +
-      '<label class="fld"><span>U (V)</span><input type="text" inputmode="decimal" id="mU" placeholder="' + uDef + '" value="' + esc(cur.u || "") + '"></label>' +
-      '<label class="fld"><span>cos φ</span><input type="text" inputmode="decimal" id="mCos" value="' + esc(cur.cosphi || "0.99") + '"></label>' +
+      '<label class="fld"><span id="mULbl">' + (reseau === "mono" ? "U (V)" : "U12 (V)") + '</span><input type="text" inputmode="decimal" id="mU" placeholder="' + uDef + '" value="' + esc(cur.u || "") + '"></label>' +
+      '<label class="fld mTriOnly"><span>U23 (V)</span><input type="text" inputmode="decimal" id="mU2" placeholder="400" value="' + esc(cur.u2 || "") + '"></label>' +
+      '<label class="fld mTriOnly"><span>U31 (V)</span><input type="text" inputmode="decimal" id="mU3" placeholder="400" value="' + esc(cur.u3 || "") + '"></label>' +
       '</div>' +
+      '<label class="fld"><span>cos φ</span><input type="text" inputmode="decimal" id="mCos" value="' + esc(cur.cosphi || "0.99") + '"></label>' +
       '<div class="consigne" id="mCalc">P ≈ —</div>' +
       '<label class="fld" style="margin:8px 0 4px"><span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1a2025">' +
       '<input type="checkbox" id="mMF"' + (cur.mf ? " checked" : "") + ' style="width:auto;margin:0;transform:scale(1.2)"> Marche forcée (témoin / essai)</span></label>' +
@@ -313,13 +328,15 @@
 
     var updCalc = function () {
       var r = readForm();
-      var pw = pOf(r), dz = desOf(r);
+      var pw = pOf(r), dz = desOf(r), ud = uDevOf(r);
       $("mCalc").innerHTML = "P ≈ <b>" + fmtP(pw) + "</b>" +
-        (r.reseau === "tri" && pw != null ? " · S ≈ " + fmtNum(pw / (num(r.cosphi) || 0.99), 1) + " kVA" : "") +
-        (dz != null && dz >= 20 ? ' · <span style="color:#c0392b;font-weight:700">déséquilibre ' + dz + "%</span>" : "");
+        (r.reseau === "tri" && pw != null ? " · S ≈ " + fmtNum(pw / (num(r.cosphi) || 0.99), 1) + " kVA · U moy " + fmtNum(uMoyOf(r), 0) + " V" : "") +
+        (dz != null && dz >= 20 ? ' · <span style="color:#c0392b;font-weight:700">déséq. I ' + dz + "%</span>" : "") +
+        (ud != null && ud >= 2 ? ' · <span style="color:#c0392b;font-weight:700">écart U ' + ud + "% (EN 50160 ≤ 2%)</span>" : "");
       var mono = $("mRes").value === "mono";
       document.querySelectorAll(".mTriOnly").forEach(function (el) { el.style.display = mono ? "none" : ""; });
       if (!$("mU").value) $("mU").placeholder = mono ? "230" : "400";
+      if ($("mULbl")) $("mULbl").textContent = mono ? "U (V)" : "U12 (V)";
     };
     function readForm() {
       return {
@@ -330,13 +347,15 @@
         reseau: $("mRes").value,
         i1: $("mI1").value.trim(), i2: $("mI2").value.trim(), i3: $("mI3").value.trim(),
         u: $("mU").value.trim() || ($("mRes").value === "mono" ? "230" : "400"),
+        u2: $("mU2") ? $("mU2").value.trim() : "",
+        u3: $("mU3") ? $("mU3").value.trim() : "",
         cosphi: $("mCos").value.trim() || "0.99",
         mf: $("mMF").checked,
         obs: $("mObs").value,
         op: (state.meta && state.meta.auditeur) || ""
       };
     }
-    ["mI1", "mI2", "mI3", "mU", "mCos"].forEach(function (id) { $(id).addEventListener("input", updCalc); });
+    ["mI1", "mI2", "mI3", "mU", "mU2", "mU3", "mCos"].forEach(function (id) { if ($(id)) $(id).addEventListener("input", updCalc); });
     $("mRes").addEventListener("change", updCalc);
     $("mTime").addEventListener("change", function () { $("mCren").value = creneauFromTime(this.value); });
     $("mPt").addEventListener("change", function () {
@@ -433,7 +452,8 @@
     var data = rowsForExport();
     if (!data.length) { toast("Aucune mesure à exporter"); return; }
     var aoa = [["Date", "Heure", "Jour", "Sem/WE", "Créneau", "Point", "Libellé", "Réseau",
-      "I L1 (A)", "I L2 (A)", "I L3 (A)", "I moy (A)", "Déséq. (%)", "U (V)", "cos φ",
+      "I L1 (A)", "I L2 (A)", "I L3 (A)", "I moy (A)", "Déséq. I (%)",
+      "U12 (V)", "U23 (V)", "U31 (V)", "U moy (V)", "Écart U (%)", "cos φ",
       "P (kW)", "S (kVA)", "Marche forcée", "Opérateur", "Observations"]];
     var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
     data.forEach(function (d) {
@@ -444,13 +464,14 @@
       aoa.push([r.date, r.heure, JOURS[new Date(r.date + "T12:00:00").getDay()], d.we ? "WE" : "semaine",
         creneauLabel(r.creneau), r.point, pd.label || "", r.reseau === "mono" ? "mono 230V" : "tri 400V",
         num(r.i1), num(r.i2), num(r.i3), im != null ? Math.round(im * 10) / 10 : null, d.dz,
-        num(r.u), num(r.cosphi), d.p != null ? Math.round(d.p * 100) / 100 : null,
+        num(r.u), num(r.u2), num(r.u3), Math.round(uMoyOf(r) * 10) / 10, uDevOf(r),
+        num(r.cosphi), d.p != null ? Math.round(d.p * 100) / 100 : null,
         d.s != null ? Math.round(d.s * 100) / 100 : null,
         r.mf ? "OUI" : "", r.op || "", (r.obs || "").replace(/\s+/g, " ").trim()]);
     });
     var wb = XLSX.utils.book_new();
     var ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = aoa[0].map(function (h, i) { return { wch: i === 6 || i === 19 ? 40 : Math.max(9, String(h).length + 2) }; });
+    ws["!cols"] = aoa[0].map(function (h, i) { return { wch: i === 6 || i === 23 ? 40 : Math.max(9, String(h).length + 2) }; });
     XLSX.utils.book_append_sheet(wb, ws, "Mesures");
     XLSX.writeFile(wb, "WADRA_Bay_Mesures_Pince_BRUT_" + nowDate() + ".xlsx");
     toast("Export brut téléchargé (" + data.length + " mesures)");
@@ -632,6 +653,13 @@
     aoa5.push(["c) Points sans aucune mesure"]);
     pts.forEach(function (pt) {
       if (!rowsForExport().some(function (d) { return d.r.point === pt.code; })) aoa5.push([pt.code, pt.label]);
+    });
+    aoa5.push([]);
+    /* b-bis) tensions */
+    aoa5.push(["e) Écarts de tension entre phases ≥ 2 % (réf. EN 50160 : déséquilibre ≤ 2 %)"]);
+    aoa5.push(["Point", "Date", "Heure", "U12", "U23", "U31", "Écart (%)"]);
+    rowsForExport().filter(function (d) { var ud = uDevOf(d.r); return ud != null && ud >= 2; }).forEach(function (d) {
+      aoa5.push([d.r.point, d.r.date, d.r.heure, num(d.r.u), num(d.r.u2), num(d.r.u3), uDevOf(d.r)]);
     });
     aoa5.push([]);
     aoa5.push(["d) Mesures en marche forcée (exclues des moyennes) : " + dataMF.length]);
