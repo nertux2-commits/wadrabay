@@ -99,29 +99,45 @@
   function rowsOf(code) { return allRows().filter(function (r) { return r.point === code; }); }
   function num(v) { var n = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isNaN(n) ? null : n; }
 
-  /* tensions : en tri, mesurées soit entre phases (U12/U23/U31, mode "ll"),
-     soit phase→neutre (V1N/V2N/V3N, mode "ln") — équivalence U = √3·V.
-     Les anciennes mesures sans umode = mode "ll" (composées). */
-  function uModeOf(r) { return r.umode === "ln" ? "ln" : "ll"; }
-  function uMoyOf(r) {
-    if (r.reseau === "mono") { var um = num(r.u); return um == null ? 230 : um; }
-    var us = [num(r.u), num(r.u2), num(r.u3)].filter(function (x) { return x != null; });
-    if (!us.length) return uModeOf(r) === "ln" ? 230 : 400;
-    return us.reduce(function (s, x) { return s + x; }, 0) / us.length;
+  /* tensions : en tri, on relève LES DEUX jeux — composées U12/U23/U31 (champs
+     u/u2/u3) ET phase→neutre V1N/V2N/V3N (champs v1/v2/v3). Équivalence U = √3·V.
+     P est calculée en priorité sur les composées, sinon sur √3·Vmoy.
+     Compat : anciennes mesures umode==='ln' (v24) = u/u2/u3 contenaient des V. */
+  function uArrOf(r) {
+    if (r.umode === "ln") return [];
+    return [num(r.u), num(r.u2), num(r.u3)].filter(function (x) { return x != null; });
   }
-  /* U équivalente entre phases (pour le calcul de P et les comparaisons) */
+  function vArrOf(r) {
+    if (r.umode === "ln") return [num(r.u), num(r.u2), num(r.u3)].filter(function (x) { return x != null; });
+    return [num(r.v1), num(r.v2), num(r.v3)].filter(function (x) { return x != null; });
+  }
+  function moy(arr) { return arr.length ? arr.reduce(function (s, x) { return s + x; }, 0) / arr.length : null; }
+  function uCompMoy(r) { return moy(uArrOf(r)); }   /* moyenne des composées mesurées */
+  function vPhMoy(r) { return moy(vArrOf(r)); }     /* moyenne des phase-neutre mesurées */
+  function uMoyOf(r) { /* mono uniquement */
+    var um = num(r.u); return um == null ? 230 : um;
+  }
+  /* U équivalente entre phases retenue pour P */
   function uEqLL(r) {
     if (r.reseau === "mono") return null;
-    var m = uMoyOf(r);
-    return uModeOf(r) === "ln" ? 1.732 * m : m;
+    var uc = uCompMoy(r);
+    if (uc != null) return uc;
+    var vp = vPhMoy(r);
+    if (vp != null) return 1.732 * vp;
+    return 400;
   }
-  function uDevOf(r) { /* écart % entre tensions composées (EN 50160 : déséquilibre ≤ 2 %) */
+  function devPct(arr) {
+    if (arr.length < 2) return null;
+    var mx = Math.max.apply(null, arr), mn = Math.min.apply(null, arr), m = moy(arr);
+    return m > 0 ? Math.round((mx - mn) / m * 1000) / 10 : 0;
+  }
+  function uDevOf(r) { return r.reseau === "mono" ? null : devPct(uArrOf(r)); }   /* écart % composées */
+  function vDevOf(r) { return r.reseau === "mono" ? null : devPct(vArrOf(r)); }   /* écart % phase-N */
+  function crossDevOf(r) { /* cohérence U vs √3·V quand les deux sont mesurées */
     if (r.reseau === "mono") return null;
-    var us = [num(r.u), num(r.u2), num(r.u3)].filter(function (x) { return x != null; });
-    if (us.length < 2) return null;
-    var mx = Math.max.apply(null, us), mn = Math.min.apply(null, us);
-    var moy = us.reduce(function (s, x) { return s + x; }, 0) / us.length;
-    return moy > 0 ? Math.round((mx - mn) / moy * 1000) / 10 : 0;
+    var uc = uCompMoy(r), vp = vPhMoy(r);
+    if (uc == null || vp == null) return null;
+    return Math.round(Math.abs(1.732 * vp - uc) / uc * 1000) / 10;
   }
   /* puissance d'un enregistrement (kW) */
   function pOf(r) {
@@ -135,6 +151,7 @@
     var im = is.reduce(function (s, x) { return s + x; }, 0) / is.length;
     return 1.732 * uEqLL(r) * im * cos / 1000;
   }
+  function fmtV(x) { return x == null ? "—" : fmtNum(x, 0) + " V"; }
   function desOf(r) { /* déséquilibre % entre phases */
     if (r.reseau === "mono") return null;
     var is = [num(r.i1), num(r.i2), num(r.i3)].filter(function (x) { return x != null; });
@@ -279,14 +296,16 @@
       point: V.point || (pts[0] && pts[0].code),
       date: nowDate(), heure: nowTime(),
       creneau: creneauFromTime(nowTime()),
-      reseau: null, umode: "ln", u: "", u2: "", u3: "", cosphi: "0.99",
+      reseau: null, u: "", u2: "", u3: "", v1: "", v2: "", v3: "", cosphi: "0.99",
       i1: "", i2: "", i3: "", mf: false, obs: ""
     };
     var pdef = pointBy(cur.point) || {};
     var reseau = cur.reseau || pdef.reseau || "tri";
-    var umode = uModeOf(cur);
-    var uDef = reseau === "mono" ? "230" : (umode === "ln" ? "230" : "400");
-    var uL = reseau === "mono" ? ["U (V)", "", ""] : (umode === "ln" ? ["V1-N (V)", "V2-N (V)", "V3-N (V)"] : ["U12 (V)", "U23 (V)", "U31 (V)"]);
+    /* compat v24 : mesures saisies en mode "ln" avaient les V dans u/u2/u3 */
+    var uVals = [cur.u || "", cur.u2 || "", cur.u3 || ""];
+    var vVals = [cur.v1 || "", cur.v2 || "", cur.v3 || ""];
+    if (cur.umode === "ln") { vVals = uVals; uVals = ["", "", ""]; }
+    var uDef = reseau === "mono" ? "230" : "400";
     var inTour = V.tour >= 0;
     var tourPts = pts.filter(function (p) { return p.grp === GRP_TGBT; });
 
@@ -314,14 +333,15 @@
       '<label class="fld mTriOnly"><span>I L2 (A)</span><input type="text" inputmode="decimal" id="mI2" placeholder="A" value="' + esc(cur.i2 || "") + '"></label>' +
       '<label class="fld mTriOnly"><span>I L3 (A)</span><input type="text" inputmode="decimal" id="mI3" placeholder="A" value="' + esc(cur.i3 || "") + '"></label>' +
       '</div>' +
-      '<label class="fld mTriOnly"><span>Tension mesurée</span><select id="mUmode">' +
-      '<option value="ln"' + (umode === "ln" ? " selected" : "") + '>Phase → Neutre (V1-N / V2-N / V3-N, ~230 V)</option>' +
-      '<option value="ll"' + (umode === "ll" ? " selected" : "") + '>Entre phases (U12 / U23 / U31, ~400 V)</option>' +
-      '</select></label>' +
       '<div class="row2">' +
-      '<label class="fld"><span id="mULbl">' + uL[0] + '</span><input type="text" inputmode="decimal" id="mU" placeholder="' + uDef + '" value="' + esc(cur.u || "") + '"></label>' +
-      '<label class="fld mTriOnly"><span id="mULbl2">' + uL[1] + '</span><input type="text" inputmode="decimal" id="mU2" placeholder="' + uDef + '" value="' + esc(cur.u2 || "") + '"></label>' +
-      '<label class="fld mTriOnly"><span id="mULbl3">' + uL[2] + '</span><input type="text" inputmode="decimal" id="mU3" placeholder="' + uDef + '" value="' + esc(cur.u3 || "") + '"></label>' +
+      '<label class="fld"><span id="mULbl">' + (reseau === "mono" ? "U (V)" : "U12 (V)") + '</span><input type="text" inputmode="decimal" id="mU" placeholder="' + uDef + '" value="' + esc(uVals[0]) + '"></label>' +
+      '<label class="fld mTriOnly"><span>U23 (V)</span><input type="text" inputmode="decimal" id="mU2" placeholder="400" value="' + esc(uVals[1]) + '"></label>' +
+      '<label class="fld mTriOnly"><span>U31 (V)</span><input type="text" inputmode="decimal" id="mU3" placeholder="400" value="' + esc(uVals[2]) + '"></label>' +
+      '</div>' +
+      '<div class="row2 mTriOnly">' +
+      '<label class="fld"><span>V1-N (V)</span><input type="text" inputmode="decimal" id="mV1" placeholder="230" value="' + esc(vVals[0]) + '"></label>' +
+      '<label class="fld"><span>V2-N (V)</span><input type="text" inputmode="decimal" id="mV2" placeholder="230" value="' + esc(vVals[1]) + '"></label>' +
+      '<label class="fld"><span>V3-N (V)</span><input type="text" inputmode="decimal" id="mV3" placeholder="230" value="' + esc(vVals[2]) + '"></label>' +
       '</div>' +
       '<label class="fld"><span>cos φ</span><input type="text" inputmode="decimal" id="mCos" value="' + esc(cur.cosphi || "0.99") + '"></label>' +
       '<div class="consigne" id="mCalc">P ≈ —</div>' +
@@ -340,21 +360,23 @@
 
     var updCalc = function () {
       var r = readForm();
-      var pw = pOf(r), dz = desOf(r), ud = uDevOf(r);
-      var ln = r.reseau === "tri" && uModeOf(r) === "ln";
-      $("mCalc").innerHTML = "P ≈ <b>" + fmtP(pw) + "</b>" +
-        (r.reseau === "tri" && pw != null ? " · S ≈ " + fmtNum(pw / (num(r.cosphi) || 0.99), 1) + " kVA · " +
-          (ln ? ("V moy " + fmtNum(uMoyOf(r), 0) + " V (U équiv. " + fmtNum(uEqLL(r), 0) + " V)") : ("U moy " + fmtNum(uMoyOf(r), 0) + " V")) : "") +
+      var pw = pOf(r), dz = desOf(r), ud = uDevOf(r), vd = vDevOf(r), xd = crossDevOf(r);
+      var uc = uCompMoy(r), vp = vPhMoy(r);
+      var uTxt = "";
+      if (r.reseau === "tri" && pw != null) {
+        uTxt = " · S ≈ " + fmtNum(pw / (num(r.cosphi) || 0.99), 1) + " kVA";
+        if (uc != null) uTxt += " · U moy " + fmtV(uc);
+        if (vp != null) uTxt += " · V moy " + fmtV(vp) + (uc == null ? " (U équiv. " + fmtV(1.732 * vp) + ")" : "");
+      }
+      $("mCalc").innerHTML = "P ≈ <b>" + fmtP(pw) + "</b>" + uTxt +
         (dz != null && dz >= 20 ? ' · <span style="color:#c0392b;font-weight:700">déséq. I ' + dz + "%</span>" : "") +
-        (ud != null && ud >= 2 ? ' · <span style="color:#c0392b;font-weight:700">écart U ' + ud + "% (EN 50160 ≤ 2%)</span>" : "");
+        (ud != null && ud >= 2 ? ' · <span style="color:#c0392b;font-weight:700">écart U ' + ud + "% (EN 50160 ≤ 2%)</span>" : "") +
+        (vd != null && vd >= 2 ? ' · <span style="color:#c0392b;font-weight:700">écart V ' + vd + "% (EN 50160 ≤ 2%)</span>" : "") +
+        (xd != null && xd >= 2 ? ' · <span style="color:#c0392b;font-weight:700">U ≠ √3·V (' + xd + "%) — vérifier une lecture</span>" : "");
       var mono = $("mRes").value === "mono";
       document.querySelectorAll(".mTriOnly").forEach(function (el) { el.style.display = mono ? "none" : ""; });
-      var md = $("mUmode") ? $("mUmode").value : "ln";
-      var ph = mono ? "230" : (md === "ln" ? "230" : "400");
-      ["mU", "mU2", "mU3"].forEach(function (id) { if ($(id) && !$(id).value) $(id).placeholder = ph; });
-      if ($("mULbl")) $("mULbl").textContent = mono ? "U (V)" : (md === "ln" ? "V1-N (V)" : "U12 (V)");
-      if ($("mULbl2")) $("mULbl2").textContent = md === "ln" ? "V2-N (V)" : "U23 (V)";
-      if ($("mULbl3")) $("mULbl3").textContent = md === "ln" ? "V3-N (V)" : "U31 (V)";
+      if ($("mU") && !$("mU").value) $("mU").placeholder = mono ? "230" : "400";
+      if ($("mULbl")) $("mULbl").textContent = mono ? "U (V)" : "U12 (V)";
     };
     function readForm() {
       return {
@@ -364,19 +386,20 @@
         creneau: $("mCren").value,
         reseau: $("mRes").value,
         i1: $("mI1").value.trim(), i2: $("mI2").value.trim(), i3: $("mI3").value.trim(),
-        umode: $("mUmode") ? $("mUmode").value : "ll",
-        u: $("mU").value.trim() || ($("mRes").value === "mono" ? "230" : ($("mUmode") && $("mUmode").value === "ln" ? "230" : "400")),
+        u: $("mU").value.trim() || ($("mRes").value === "mono" ? "230" : ""),
         u2: $("mU2") ? $("mU2").value.trim() : "",
         u3: $("mU3") ? $("mU3").value.trim() : "",
+        v1: $("mV1") ? $("mV1").value.trim() : "",
+        v2: $("mV2") ? $("mV2").value.trim() : "",
+        v3: $("mV3") ? $("mV3").value.trim() : "",
         cosphi: $("mCos").value.trim() || "0.99",
         mf: $("mMF").checked,
         obs: $("mObs").value,
         op: (state.meta && state.meta.auditeur) || ""
       };
     }
-    ["mI1", "mI2", "mI3", "mU", "mU2", "mU3", "mCos"].forEach(function (id) { if ($(id)) $(id).addEventListener("input", updCalc); });
+    ["mI1", "mI2", "mI3", "mU", "mU2", "mU3", "mV1", "mV2", "mV3", "mCos"].forEach(function (id) { if ($(id)) $(id).addEventListener("input", updCalc); });
     $("mRes").addEventListener("change", updCalc);
-    if ($("mUmode")) $("mUmode").addEventListener("change", updCalc);
     $("mTime").addEventListener("change", function () { $("mCren").value = creneauFromTime(this.value); });
     $("mPt").addEventListener("change", function () {
       var pd = pointBy(this.value) || {};
@@ -473,7 +496,9 @@
     if (!data.length) { toast("Aucune mesure à exporter"); return; }
     var aoa = [["Date", "Heure", "Jour", "Sem/WE", "Créneau", "Point", "Libellé", "Réseau",
       "I L1 (A)", "I L2 (A)", "I L3 (A)", "I moy (A)", "Déséq. I (%)",
-      "U1 (V)", "U2 (V)", "U3 (V)", "Réf. U", "U moy mesurée (V)", "U équiv. LL (V)", "Écart U (%)", "cos φ",
+      "U12 (V)", "U23 (V)", "U31 (V)", "U moy (V)",
+      "V1-N (V)", "V2-N (V)", "V3-N (V)", "V moy (V)",
+      "U retenue LL (V)", "Écart U (%)", "Écart V (%)", "Écart U vs √3·V (%)", "cos φ",
       "P (kW)", "S (kVA)", "Marche forcée", "Opérateur", "Observations"]];
     var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
     data.forEach(function (d) {
@@ -481,20 +506,23 @@
       var is = [num(r.i1), num(r.i2), num(r.i3)].filter(function (x) { return x != null; });
       var im = is.length ? is.reduce(function (s, x) { return s + x; }, 0) / is.length : null;
       var pd = pointBy(r.point) || {};
+      var lnLeg = r.umode === "ln";
+      var uC = (r.reseau === "mono") ? [num(r.u), null, null] : (lnLeg ? [null, null, null] : [num(r.u), num(r.u2), num(r.u3)]);
+      var vC = (r.reseau === "mono") ? [null, null, null] : (lnLeg ? [num(r.u), num(r.u2), num(r.u3)] : [num(r.v1), num(r.v2), num(r.v3)]);
       aoa.push([r.date, r.heure, JOURS[new Date(r.date + "T12:00:00").getDay()], d.we ? "WE" : "semaine",
         creneauLabel(r.creneau), r.point, pd.label || "", r.reseau === "mono" ? "mono 230V" : "tri 400V",
         num(r.i1), num(r.i2), num(r.i3), im != null ? Math.round(im * 10) / 10 : null, d.dz,
-        num(r.u), num(r.u2), num(r.u3),
-        r.reseau === "mono" ? "mono" : (uModeOf(r) === "ln" ? "phase-N" : "entre phases"),
-        Math.round(uMoyOf(r) * 10) / 10,
-        uEqLL(r) != null ? Math.round(uEqLL(r) * 10) / 10 : null, uDevOf(r),
+        uC[0], uC[1], uC[2], uCompMoy(r) != null ? Math.round(uCompMoy(r) * 10) / 10 : null,
+        vC[0], vC[1], vC[2], vPhMoy(r) != null ? Math.round(vPhMoy(r) * 10) / 10 : null,
+        r.reseau === "mono" ? Math.round(uMoyOf(r) * 10) / 10 : Math.round(uEqLL(r) * 10) / 10,
+        uDevOf(r), vDevOf(r), crossDevOf(r),
         num(r.cosphi), d.p != null ? Math.round(d.p * 100) / 100 : null,
         d.s != null ? Math.round(d.s * 100) / 100 : null,
         r.mf ? "OUI" : "", r.op || "", (r.obs || "").replace(/\s+/g, " ").trim()]);
     });
     var wb = XLSX.utils.book_new();
     var ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = aoa[0].map(function (h, i) { return { wch: i === 6 || i === 25 ? 40 : Math.max(9, String(h).length + 2) }; });
+    ws["!cols"] = aoa[0].map(function (h, i) { return { wch: i === 6 || i === 30 ? 40 : Math.max(9, String(h).length + 2) }; });
     XLSX.utils.book_append_sheet(wb, ws, "Mesures");
     XLSX.writeFile(wb, "WADRA_Bay_Mesures_Pince_BRUT_" + nowDate() + ".xlsx");
     toast("Export brut téléchargé (" + data.length + " mesures)");
@@ -679,10 +707,16 @@
     });
     aoa5.push([]);
     /* b-bis) tensions */
-    aoa5.push(["e) Écarts de tension entre phases ≥ 2 % (réf. EN 50160 : déséquilibre ≤ 2 %)"]);
-    aoa5.push(["Point", "Date", "Heure", "U12", "U23", "U31", "Écart (%)"]);
-    rowsForExport().filter(function (d) { var ud = uDevOf(d.r); return ud != null && ud >= 2; }).forEach(function (d) {
-      aoa5.push([d.r.point, d.r.date, d.r.heure, num(d.r.u), num(d.r.u2), num(d.r.u3), uDevOf(d.r)]);
+    aoa5.push(["e) Anomalies de tension : écart entre phases ≥ 2 % (EN 50160 : déséquilibre ≤ 2 %) ou incohérence U vs √3·V ≥ 2 %"]);
+    aoa5.push(["Point", "Date", "Heure", "Écart U (%)", "Écart V (%)", "U moy", "√3 × V moy", "Écart croisé (%)"]);
+    rowsForExport().filter(function (d) {
+      var ud = uDevOf(d.r), vd = vDevOf(d.r), xd = crossDevOf(d.r);
+      return (ud != null && ud >= 2) || (vd != null && vd >= 2) || (xd != null && xd >= 2);
+    }).forEach(function (d) {
+      var uc = uCompMoy(d.r), vp = vPhMoy(d.r);
+      aoa5.push([d.r.point, d.r.date, d.r.heure, uDevOf(d.r), vDevOf(d.r),
+        uc != null ? Math.round(uc * 10) / 10 : null,
+        vp != null ? Math.round(1.732 * vp * 10) / 10 : null, crossDevOf(d.r)]);
     });
     aoa5.push([]);
     aoa5.push(["d) Mesures en marche forcée (exclues des moyennes) : " + dataMF.length]);
