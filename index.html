@@ -388,6 +388,7 @@ function openViewer(id){
   viewerCurrent = id;
   $('vImg').src = p.url;
   $('vImg').classList.remove('zoomed');
+  $('vMove').textContent = (String(p.key).indexOf('it_') === 0) ? '↔ Reclasser Avant/Après' : '↔ Reclasser Plaque/Équipement';
   $('vMove').style.display = '';
   $('vDel').style.display = '';
   $('vNav').style.display = 'none';
@@ -432,7 +433,10 @@ $('vMove').onclick = async () => {
   if(idbOK){ try { await idbPut('photos', {id:p.id, key:p.key, zoneId:p.zoneId, blob:p.blob, plate:p.plate, synced:false}); } catch(e) {} }
   renderStripKind(p.key, true);
   renderStripKind(p.key, false);
-  toast(p.plate ? 'Photo reclassée « Plaque »' : 'Photo reclassée « Équipement »');
+  if(window.MAINT && MAINT.photoAdded) try { MAINT.photoAdded(p.key); } catch(e) {}
+  const isInter = String(p.key).indexOf('it_') === 0;
+  toast(p.plate ? (isInter ? 'Photo reclassée « Après »' : 'Photo reclassée « Plaque »')
+                : (isInter ? 'Photo reclassée « Avant »' : 'Photo reclassée « Équipement »'));
   touch('photo');
   $('viewer').classList.add('hidden');
   $('vImg').src = '';

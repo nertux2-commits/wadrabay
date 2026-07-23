@@ -49,6 +49,9 @@
     { key: "fait",       label: "Fait (entretien préventif)",             open: false, color: "#1a9d5a" }
   ];
   var TECHS_DEFAUT = ["JC ALIKIE", "François YANTAO"];
+  /* déclarants : tout agent de l'hôtel peut signaler — liste complétable dans l'appli */
+  var STAFF_DEFAUT = ["Jordan (direction)", "JC ALIKIE", "François YANTAO", "Marvin WAITRONYIE",
+    "Célestin", "Réception", "Femme de chambre", "Cuisine", "Restaurant / bar", "Jardinier / extérieurs"];
 
   function natureBy(k) { return NATURES.filter(function (n) { return n.key === k; })[0] || null; }
   function gammeBy(k) { return GAMMES.filter(function (g) { return g.key === k; })[0] || null; }
@@ -77,6 +80,25 @@
     I["_techs"] = { list: cur };
     touch("inter:_techs");
   }
+  function staffList() {
+    var c = ensureI()["_staff"];
+    var base = STAFF_DEFAUT.slice();
+    if (c && c.list && c.list.length) {
+      c.list.forEach(function (n) { if (base.indexOf(n) < 0) base.push(n); });
+    }
+    return base;
+  }
+  function addStaff(name) {
+    var I = ensureI();
+    if (staffList().indexOf(name) >= 0) return;
+    var c = I["_staff"] || { list: [] };
+    c.list = c.list || [];
+    c.list.push(name);
+    I["_staff"] = c;
+    touch("inter:_staff");
+  }
+  function lastDecl() { try { return localStorage.getItem("wadra_decl") || ""; } catch (e) { return ""; } }
+  function rememberDecl(n) { try { if (n) localStorage.setItem("wadra_decl", n); } catch (e) {} }
   function allInter() {
     var I = ensureI(), out = [];
     for (var k in I) {
@@ -329,8 +351,10 @@
       (r.obs ? '<b>Observations :</b> ' + esc(r.obs) : "") +
       '</div></div>';
 
-    html += '<div class="panel"><h2>Photos (' + ph.length + ')</h2><div class="photos" id="iPhotos"></div>' +
-      '<button class="btn sec" id="iAddPhoto" style="margin-top:9px">📷 Ajouter une photo</button></div>';
+    var nAv = ph.filter(function (p) { return !p.plate; }).length;
+    var nAp = ph.length - nAv;
+    html += '<div class="panel"><h2>📷 Photos AVANT — constat (' + nAv + ')</h2><div class="photos" id="iPhAv"></div></div>' +
+      '<div class="panel"><h2>📷 Photos APRÈS — réparation (' + nAp + ')</h2><div class="photos" id="iPhAp"></div></div>';
 
     if (isOpen(r)) {
       if (r.statut === "signale") html += '<button class="btn primary" id="iTake" style="background:#e0892a">👷 Prendre en charge (passe « en cours »)</button>';
@@ -341,8 +365,7 @@
     html += '<button class="btn sec" id="iDel" style="margin-top:9px;color:#c0392b;border-color:#e7b3ab">🗑 Supprimer cette fiche</button>';
 
     $("app").innerHTML = html;
-    paintPhotoStrip("iPhotos", V.id);
-    $("iAddPhoto").onclick = function () { triggerPhoto(V.id, false); };
+    paintAllStrips("iPh", V.id);
     if ($("iTake")) $("iTake").onclick = function () {
       var techs = techList().map(function (t) { return { label: "👷 " + t, value: t }; });
       sheetChoose("Prise en charge par…", "", techs, function (t) {
@@ -391,16 +414,22 @@
     toast(statut === "provisoire" ? "Clôturée en réparation provisoire" : "Intervention clôturée — réparé");
   }
 
-  function paintPhotoStrip(boxId, key) {
+  /* deux zones : AVANT (plate=false) / APRÈS (plate=true) — réutilise le flag
+     photo existant, la visionneuse permet de reclasser Avant↔Après */
+  function paintPhotoStrip(boxId, key, apres) {
     var box = $(boxId); if (!box) return;
-    var ph = photosFor(key);
+    var ph = photosFor(key).filter(function (p) { return !!p.plate === !!apres; });
     var h = "";
     ph.forEach(function (p) { h += '<div class="thumb" data-pid="' + p.id + '"><img src="' + p.url + '" alt=""></div>'; });
-    h += '<button class="addphoto" id="' + boxId + 'Add">📷<span>AJOUT</span></button>';
+    h += '<button class="addphoto" id="' + boxId + 'Add">📷<span>' + (apres ? "APRÈS" : "AVANT") + '</span></button>';
     box.innerHTML = h;
     box.querySelectorAll(".thumb").forEach(function (t) { t.onclick = function () { openViewer(t.dataset.pid); }; });
     var ab = $(boxId + "Add");
-    if (ab) ab.onclick = function () { triggerPhoto(key, false); };
+    if (ab) ab.onclick = function () { triggerPhoto(key, !!apres); };
+  }
+  function paintAllStrips(prefix, key) {
+    paintPhotoStrip(prefix + "Av", key, false);
+    paintPhotoStrip(prefix + "Ap", key, true);
   }
 
   /* -------------------- sélecteur d'équipement -------------------- */
@@ -524,9 +553,18 @@
       '<input type="checkbox" id="fArret"' + (cur.arret ? " checked" : "") + ' style="width:auto;margin:0;transform:scale(1.2)"> ⛔ Équipement à l\'arrêt (hors service)</span>' +
       '<span class="tiny muted" style="display:block;margin-top:3px">Si coché : l\'équipement passe « EN PANNE » dans le recensement et sort du bilan jusqu\'à la réparation.</span></label>';
 
+    /* déclarant : sélecteur pré-rempli (tous les agents de l'hôtel), complétable */
+    var declSel = cur.decl || lastDecl() || "";
+    var declOpts = staffList();
+    if (declSel && declOpts.indexOf(declSel) < 0) declOpts = [declSel].concat(declOpts);
+    var declHtml = '<select id="fDecl">' +
+      '<option value="">— qui signale ? —</option>' +
+      declOpts.map(function (n) { return '<option value="' + esc(n) + '"' + (n === declSel ? " selected" : "") + '>' + esc(n) + '</option>'; }).join("") +
+      '<option value="__add">＋ Ajouter mon nom…</option>' +
+      '</select>';
+
     if (isSignal) {
-      html += '<label class="fld"><span>Votre nom (déclarant)</span>' +
-        '<input type="text" id="fDecl" placeholder="ex. réception, Jordan…" value="' + esc(cur.decl || (state.meta && state.meta.auditeur) || "") + '"></label>';
+      html += '<label class="fld"><span>Votre nom (déclarant)</span>' + declHtml + '</label>';
     } else {
       /* volet traitement */
       html += '<div style="border-top:1px solid #eef1f2;margin:4px 0 10px;padding-top:10px">' +
@@ -556,8 +594,7 @@
         '<label class="fld" style="margin:2px 0 8px"><span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1a2025">' +
         '<input type="checkbox" id="fCtrl"' + (cur.ctrl ? " checked" : "") + ' style="width:auto;margin:0;transform:scale(1.2)"> ✅ Efficacité vérifiée (bon fonctionnement contrôlé après intervention)</span></label>' +
         '</div>' +
-        '<label class="fld"><span>Déclaré par (si différent du technicien)</span>' +
-        '<input type="text" id="fDecl" value="' + esc(cur.decl || "") + '"></label>' +
+        '<label class="fld"><span>Déclaré par (si différent du technicien)</span>' + declHtml + '</label>' +
         '</div>';
     }
 
@@ -566,13 +603,14 @@
 
     html += '</div>';
 
-    html += '<div class="panel"><h2>Photos (avant / après)</h2><div class="photos" id="fPhotos"></div></div>';
+    html += '<div class="panel"><h2>📷 Photos AVANT — constat</h2><div class="photos" id="fPhAv"></div></div>' +
+      '<div class="panel"><h2>📷 Photos APRÈS — réparation</h2><div class="photos" id="fPhAp"></div></div>';
 
     html += '<button class="btn primary" id="fSave" style="background:#b3541e">💾 Enregistrer</button>' +
       '<button class="btn sec" id="fCancel" style="margin-top:9px">Annuler</button>';
 
     $("app").innerHTML = html;
-    paintPhotoStrip("fPhotos", recId);
+    paintAllStrips("fPh", recId);
 
     var typeSel = $("fType");
     function syncType() {
@@ -604,6 +642,20 @@
           self.value = name;
         });
         this.value = cur.tech || "";
+      }
+    });
+
+    if ($("fDecl")) $("fDecl").addEventListener("change", function () {
+      var self = this;
+      if (this.value === "__add") {
+        sheetInput("Votre nom", "Sera proposé à tout le monde pour les prochains signalements", "", "Ajouter", function (name) {
+          addStaff(name);
+          var opt = document.createElement("option");
+          opt.value = name; opt.textContent = name;
+          self.insertBefore(opt, self.querySelector('option[value="__add"]'));
+          self.value = name;
+        });
+        this.value = declSel || "";
       }
     });
 
@@ -639,7 +691,7 @@
         heureRes: (!statutBy(statut).open && $("fTimeRes")) ? $("fTimeRes").value : (cur.heureRes || ""),
         ctrl: $("fCtrl") ? $("fCtrl").checked : !!cur.ctrl,
         tech: $("fTech") ? $("fTech").value : (cur.tech || ""),
-        decl: $("fDecl") ? $("fDecl").value.trim() : (cur.decl || ""),
+        decl: ($("fDecl") && $("fDecl").value !== "__add") ? $("fDecl").value : (cur.decl || ""),
         duree: $("fDuree") ? $("fDuree").value.trim() : (cur.duree || ""),
         obs: $("fObs").value,
         regPrev: cur.regPrev
@@ -647,6 +699,8 @@
       if (!isSignal && t === "cor" && !rec.nature) { toast("Indiquer la nature de la panne"); return; }
       if (!isSignal && t === "prev" && !rec.gamme) { toast("Indiquer le type d'entretien"); return; }
       if (isSignal && !rec.sympt) { toast("Décrire en une phrase ce qui ne va pas"); return; }
+      if (isSignal && !rec.decl) { toast("Indiquer qui signale (votre nom)"); return; }
+      rememberDecl(rec.decl);
       if (!isSignal && !statutBy(statut).open && !rec.action) { toast("Décrire l'action réalisée avant de clôturer"); return; }
       var id = V.editId || V.draft || ("it_" + rndId());
       ensureI()[id] = rec;
@@ -675,7 +729,7 @@
       ["N°", "Type", "Statut", "Équipement", "Zone / TD", "Pièce", "Date constat", "Heure",
         "Nature", "Symptôme / constat", "Cause identifiée", "Action réalisée", "Pièces remplacées",
         "À l'arrêt", "Date résolution", "Heure", "Immobilisation (j)", "Efficacité vérifiée",
-        "Technicien", "Déclarant", "Durée interv. (h)", "Photos", "Observations"]
+        "Technicien", "Déclarant", "Durée interv. (h)", "Photos avant", "Photos après", "Observations"]
     ];
     rows.forEach(function (r, i) {
       var inf = eqInfo(r.equip);
@@ -686,12 +740,15 @@
         (r.action || "").replace(/\s+/g, " "), r.pieces || "",
         r.arret ? "OUI" : "", r.dateRes || "", r.heureRes || "", immoJours(r),
         statutBy(r.statut).open ? "" : (r.ctrl ? "OUI" : "NON"),
-        r.tech || "", r.decl || "", num(r.duree), photosFor(r._id).length || "",
+        r.tech || "", r.decl || "",
+        num(r.duree),
+        photosFor(r._id).filter(function (p) { return !p.plate; }).length || "",
+        photosFor(r._id).filter(function (p) { return !!p.plate; }).length || "",
         (r.obs || "").replace(/\s+/g, " ")]);
     });
     var ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = aoa[4].map(function (h, i) {
-      return { wch: (i === 3 || i === 9 || i === 10 || i === 11 || i === 22) ? 34 : Math.max(9, String(h).length + 2) };
+      return { wch: (i === 3 || i === 9 || i === 10 || i === 11 || i === 23) ? 34 : Math.max(9, String(h).length + 2) };
     });
     XLSX.utils.book_append_sheet(wb, ws, "Registre");
 
@@ -811,8 +868,8 @@
     openDetail: function (id) { V.screen = "detail"; V.id = id; nav("maint"); },
     photoAdded: function (key) {
       if (view.name !== "maint") return;
-      if (V.screen === "form" && key === (V.editId || V.draft)) paintPhotoStrip("fPhotos", key);
-      else if (V.screen === "detail" && key === V.id) paintPhotoStrip("iPhotos", key);
+      if (V.screen === "form" && key === (V.editId || V.draft)) paintAllStrips("fPh", key);
+      else if (V.screen === "detail" && key === V.id) paintAllStrips("iPh", key);
     }
   };
 })();
