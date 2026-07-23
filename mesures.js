@@ -205,7 +205,7 @@
     html += '<div style="border-radius:16px;overflow:hidden;margin-bottom:12px;padding:16px;color:#fff;' +
       'background:linear-gradient(135deg,#155e9c,#0d3f6b 60%,#092c4c);box-shadow:0 2px 10px rgba(20,30,40,.18)">' +
       '<div style="font-size:19px;font-weight:800">📈 Campagne de mesures à la pince</div>' +
-      '<div style="font-size:12.5px;opacity:.92;margin-top:3px">Plan de mesurage ISO 50001 §6.6 · Kyoritsu 2056R · 20 → 26 juillet 2026 · réf. talon EEC ≈ ' + TALON_EEC_KW + ' kW</div>' +
+      '<div style="font-size:12.5px;opacity:.92;margin-top:3px">Plan de mesurage · Kyoritsu 2056R · 20 → 26 juillet 2026 · réf. talon EEC ≈ ' + TALON_EEC_KW + ' kW</div>' +
       '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap">' +
       '<div style="flex:1;min-width:90px;background:rgba(255,255,255,.13);border-radius:10px;padding:8px 10px">' +
       '<div style="font-size:19px;font-weight:800">' + rows.length + '</div><div style="font-size:11px;opacity:.9">mesures saisies</div></div>' +
@@ -587,10 +587,10 @@
     var pts = allPoints();
     var wb = XLSX.utils.book_new();
 
-    /* --- Feuille 0 : cadre SMÉ ISO 50001 --- */
+    /* --- Feuille 0 : cadre SMÉ --- */
     var aoa0 = [
-      ["SMÉ — MAÎTRISE DE L'ÉNERGIE · HÔTEL WADRA BAY (esprit ISO 50001)"], [],
-      ["Objet du classeur", "Traitement automatique des mesures pince (plan de mesurage §6.6) pour l'audit réconcilié : identification des usages énergétiques significatifs (UES), IPÉ, écarts vs revue énergétique (§6.3)."],
+      ["SMÉ — MAÎTRISE DE L'ÉNERGIE · HÔTEL WADRA BAY"], [],
+      ["Objet du classeur", "Traitement automatique des mesures pince (plan de mesurage) pour l'audit réconcilié : identification des usages énergétiques significatifs (UES), IPÉ, écarts vs revue énergétique."],
       ["Généré le", nowDate() + " " + nowTime()],
       ["Mesures exploitées", data.length + " (hors marche forcée : " + dataMF.length + " exclues des moyennes)"], [],
       ["SITUATION ÉNERGÉTIQUE DE RÉFÉRENCE (SER) — sources factures/contrat EEC"],
@@ -606,7 +606,7 @@
     ];
     var ws0 = XLSX.utils.aoa_to_sheet(aoa0);
     ws0["!cols"] = [{ wch: 26 }, { wch: 110 }];
-    XLSX.utils.book_append_sheet(wb, ws0, "SMÉ ISO 50001");
+    XLSX.utils.book_append_sheet(wb, ws0, "SMÉ");
 
     /* P moyenne par point × créneau (hors marche forcée) */
     function slotAvg(code, slotKey, weFilter) {
