@@ -39,6 +39,7 @@
     state.custom = state.custom || {};    // équipements ajoutés sur le terrain (par zone)
     state.struct = state.struct || {};    // modifications de structure (pièces/équip. ajout/déplacement/renommage/suppression)
     state.mesures = state.mesures || {};  // campagne de mesures pince (module mesures.js)
+    state.inter = state.inter || {};      // maintenance : interventions (module maintenance.js)
     state.sync = state.sync || {};
     if (!state.sync.device) state.sync.device = "dev_" + Math.random().toString(36).slice(2, 9);
     state.sync.entriesPull = state.sync.entriesPull || "1970-01-01T00:00:00Z";
@@ -153,6 +154,14 @@
       var mrec = (state.mesures || {})[mk];
       if (!mrec) { row.deleted = true; row.body = {}; }
       else row.body = mrec;
+      return row;
+    }
+    if (id.indexOf("inter:") === 0) {
+      row.type = "inter";
+      var ik = id.slice(6);
+      var irec = (state.inter || {})[ik];
+      if (!irec) { row.deleted = true; row.body = {}; }
+      else row.body = irec;
       return row;
     }
     if (id.indexOf("custom:") === 0) {
@@ -301,6 +310,13 @@
       var mk2 = row.id.slice(7);
       if (row.deleted) delete state.mesures[mk2];
       else state.mesures[mk2] = row.body || {};
+      return;
+    }
+    if (row.type === "inter") {
+      state.inter = state.inter || {};
+      var ik2 = row.id.slice(6);
+      if (row.deleted) delete state.inter[ik2];
+      else state.inter[ik2] = row.body || {};
       return;
     }
     if (row.type === "custom") {

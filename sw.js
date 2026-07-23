@@ -1,6 +1,6 @@
 /* Service worker — Relevé Terrain WADRA Bay (TD -> Pièce -> Équipement)
    v4 : pré-remplissage Mission 1 (Z03) + photos terrain + synchro Supabase */
-const CACHE = 'wadra-releve-v25';
+const CACHE = 'wadra-releve-v26';
 /* Photo officielle de l'hôtel (page d'accueil) — pré-cachée en no-cors pour le hors-ligne */
 const HERO_URL = 'https://www.wadrabay.nc/images/photo3.jpg';
 /* Miniatures du catalogue d'équipements (notices techniques c01..c91 ; c92 sans notice) */
@@ -16,6 +16,7 @@ const ASSETS = [
   './seed_z03.js',
   './schemas.js',
   './mesures.js',
+  './maintenance.js',
   './sync.js',
   './sw.js',
   './photos_z03/Z03_C1_lave-linge-professionnel-n-3_1.jpg',

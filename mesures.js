@@ -223,6 +223,11 @@
       '<button class="btn sec" id="mExpAudit" style="margin-top:9px">📊 Export traitement « Audit réconcilié » (xlsx)</button>' +
       '<div class="tiny muted" style="margin-top:7px">Le traitement calcule automatiquement : P par départ et par créneau, profil journalier, talon vs EEC, foisonnement vs inventaire, contrôles de cohérence.</div></div>';
 
+    html += '<div class="panel"><h2>🔍 Rechercher</h2>' +
+      '<input type="text" id="mSearch" placeholder="Point, mesure, date, observation…" ' +
+      'style="width:100%;border:1.4px solid #d6dbde;border-radius:9px;padding:9px 10px;background:#fafbfb">' +
+      '<div id="mSearchRes"></div></div>';
+
     /* liste des points par groupe */
     var grps = [];
     pts.forEach(function (p) { if (grps.indexOf(p.grp) < 0) grps.push(p.grp); });
@@ -251,6 +256,49 @@
     document.querySelectorAll(".row-item[data-mp]").forEach(function (el) {
       el.onclick = function () { V.screen = "point"; V.point = el.dataset.mp; render(); };
     });
+
+    /* ---- moteur de recherche (points + mesures) ---- */
+    function normM(s) {
+      s = String(s == null ? "" : s).toLowerCase();
+      try { s = s.normalize("NFD").replace(/[̀-ͯ]/g, ""); } catch (e) {}
+      return s;
+    }
+    function paintMSearch() {
+      var box = $("mSearchRes"); if (!box) return;
+      var q = normM($("mSearch").value.trim());
+      if (!q) { box.innerHTML = ""; return; }
+      var words = q.split(/\s+/);
+      var hitP = pts.filter(function (p) {
+        var hay = normM(p.code + " " + p.label + " " + p.grp);
+        return words.every(function (w) { return hay.indexOf(w) >= 0; });
+      });
+      var hitM = allRows().filter(function (r) {
+        var pd = pointBy(r.point) || {};
+        var frd = r.date ? (r.date.slice(8) + "/" + r.date.slice(5, 7) + "/" + r.date.slice(0, 4)) : "";
+        var hay = normM([r.point, pd.label, r.date, frd, r.heure, creneauLabel(r.creneau), r.obs, r.op, r.mf ? "marche forcee mf" : ""].join(" "));
+        return words.every(function (w) { return hay.indexOf(w) >= 0; });
+      }).reverse();
+      var h = "";
+      hitP.forEach(function (p) {
+        h += '<div class="opt" data-mc="' + esc(p.code) + '" style="padding:9px 6px;border-top:1px solid #eef1f2;cursor:pointer">📌 <b>' + esc(p.code) + '</b>' +
+          '<div class="tiny muted">' + esc(p.label) + ' · ' + rowsOf(p.code).length + ' mesure(s)</div></div>';
+      });
+      hitM.slice(0, 15).forEach(function (r) {
+        h += '<div class="opt" data-mm="' + esc(r._id) + '" style="padding:9px 6px;border-top:1px solid #eef1f2;cursor:pointer">⚡ <b>' + esc(r.point) + '</b> · ' + fmtP(pOf(r)) +
+          '<div class="tiny muted">' + esc(r.date) + " " + esc(r.heure) + " · " + esc(creneauLabel(r.creneau)) +
+          (r.obs ? " — " + esc(String(r.obs).slice(0, 55)) : "") + '</div></div>';
+      });
+      if (hitM.length > 15) h += '<div class="tiny muted" style="padding:7px 2px">… ' + (hitM.length - 15) + ' autres mesures — affinez la recherche</div>';
+      if (!hitP.length && !hitM.length) h = '<div class="tiny muted" style="padding:7px 2px">Aucun résultat.</div>';
+      box.innerHTML = h;
+      box.querySelectorAll(".opt[data-mc]").forEach(function (el) {
+        el.onclick = function () { V.screen = "point"; V.point = el.dataset.mc; render(); };
+      });
+      box.querySelectorAll(".opt[data-mm]").forEach(function (el) {
+        el.onclick = function () { openForm(null, el.dataset.mm); };
+      });
+    }
+    $("mSearch").addEventListener("input", paintMSearch);
   }
 
   /* -------------------- RENDU : détail d'un point -------------------- */

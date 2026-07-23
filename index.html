@@ -358,6 +358,7 @@ async function processPhotoFiles(files){
 
   renderStripKind(photoTargetKey, true);
   renderStripKind(photoTargetKey, false);
+  if(window.MAINT && MAINT.photoAdded) try { MAINT.photoAdded(photoTargetKey); } catch(e) {}
   toast('Photo(s) enregistrée(s)');
   touch('photo');
 }
@@ -373,6 +374,7 @@ async function deletePhoto(id){
   if(idbOK) try { await idbDel('photos', id); } catch(e) {}
   renderStripKind(p.key, true);
   renderStripKind(p.key, false);
+  if(window.MAINT && MAINT.photoAdded) try { MAINT.photoAdded(p.key); } catch(e) {}
   scheduleSave();
 }
 
@@ -803,6 +805,10 @@ function renderHeader(){
     h.innerHTML = '<button class="hbtn" id="goWelM">' + IC.back + '</button>' +
       '<div class="htitle">Campagne de mesures — Pince</div>';
     $('goWelM').onclick = () => { if(window.MESURES && MESURES.back && MESURES.back()) return; nav('welcome'); };
+  } else if(view.name === 'maint'){
+    h.innerHTML = '<button class="hbtn" id="goWelI">' + IC.back + '</button>' +
+      '<div class="htitle">Maintenance — Interventions</div>';
+    $('goWelI').onclick = () => { if(window.MAINT && MAINT.back && MAINT.back()) return; nav('welcome'); };
   } else if(view.name === 'home'){
     h.innerHTML = '<button class="hbtn" id="goWel">' + IC.back + '</button>' +
       '<div class="htitle">Revue Énergétique — Équipements</div>';
@@ -857,6 +863,11 @@ function renderHome(){
     (state.meta.updated ? ' · enreg. ' + new Date(state.meta.updated).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '') +
     '</div></div>';
 
+  html += '<div class="panel"><h2>🔍 Rechercher un équipement</h2>' +
+    '<input type="text" id="eqSearch" placeholder="Nom, marque, modèle, local, pièce, zone…" ' +
+    'style="width:100%;border:1.4px solid #d6dbde;border-radius:9px;padding:9px 10px;background:#fafbfb">' +
+    '<div id="eqSearchRes"></div></div>';
+
   html += '<button class="btn primary" id="goBilan" style="margin-bottom:12px">📊 Bilan de puissance · pièce / TD / hôtel</button>';
 
   html += '<div class="panel" id="storPanel"><div class="tiny muted">Stockage…</div></div>';
@@ -889,6 +900,51 @@ function renderHome(){
   });
   if($('pmRow')) $('pmRow').onclick = () => openStatic(self.WADRA_PLAN_MASSE, 0);
   if($('goBilan')) $('goBilan').onclick = () => nav('bilan');
+
+  // ---- moteur de recherche équipements (nom, marque, modèle, local, pièce, zone, obs) ----
+  const normS = s => { s = String(s == null ? '' : s).toLowerCase(); try { s = s.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch(err) {} return s; };
+  const paintEqSearch = () => {
+    const box = $('eqSearchRes'); if(!box) return;
+    const q = normS($('eqSearch').value.trim());
+    if(!q){ box.innerHTML = ''; return; }
+    const words = q.split(/\s+/);
+    const hits = [];
+    TREE.forEach(z => z.rooms.forEach(r => {
+      if(words.every(w => normS(z.name + ' ' + r.name).indexOf(w) >= 0))
+        hits.push({kind:'room', z, r});
+      r.equipment.forEach(e => {
+        const f = state.equip[e.id] || {};
+        const hay = normS([e.name, f.marque, f.modele, f.local, f.observations, r.name, z.name].join(' '));
+        if(words.every(w => hay.indexOf(w) >= 0)) hits.push({kind:'eq', z, r, e, f});
+      });
+    }));
+    let h = '';
+    hits.slice(0, 20).forEach((hit, i) => {
+      if(hit.kind === 'room'){
+        h += '<div class="opt" data-hi="' + i + '" style="padding:9px 6px;border-top:1px solid #eef1f2;cursor:pointer">📍 <b>' + esc(hit.r.name) + '</b>' +
+          '<div class="tiny muted">' + esc(hit.z.name) + ' · pièce · ' + hit.r.equipment.length + ' équipement(s)</div></div>';
+      } else {
+        const hm = window.MAINT ? MAINT.health(hit.e.id) : null;
+        h += '<div class="opt" data-hi="' + i + '" style="padding:9px 6px;border-top:1px solid #eef1f2;cursor:pointer">⚡ <b>' + esc(hit.e.name) + '</b>' +
+          (hm && hm !== 'ok' ? ' <span style="color:' + MAINT.healthColor(hm) + ';font-weight:800;font-size:11px">' + MAINT.healthLabel(hm) + '</span>' : '') +
+          '<div class="tiny muted">' + esc(hit.z.name + ' · ' + hit.r.name) +
+          ((hit.f.marque || hit.f.modele) ? ' · ' + esc((hit.f.marque || '') + ' ' + (hit.f.modele || '')) : '') + '</div></div>';
+      }
+    });
+    if(hits.length > 20) h += '<div class="tiny muted" style="padding:7px 2px">… ' + (hits.length - 20) + ' autres résultats — affinez la recherche</div>';
+    if(!hits.length) h = '<div class="tiny muted" style="padding:7px 2px">Aucun résultat.</div>';
+    box.innerHTML = h;
+    box.querySelectorAll('.opt[data-hi]').forEach(el => {
+      el.onclick = () => {
+        const hit = hits[+el.dataset.hi];
+        view.tdId = hit.z.id; view.roomId = hit.r.id;
+        if(hit.kind === 'eq'){ view.equipId = hit.e.id; nav('equip'); }
+        else nav('room');
+      };
+    });
+  };
+  if($('eqSearch')) $('eqSearch').addEventListener('input', paintEqSearch);
+
   fillStorage();
 }
 
@@ -990,13 +1046,15 @@ function renderRoom(){
   r.equipment.forEach(e => {
     const f = state.equip[e.id] || {};
     const st = f.statut || '';
-    const hs = (f.regime === 'panne');
+    const hm = window.MAINT ? MAINT.health(e.id) : null;
+    const hs = (f.regime === 'panne') || hm === 'panne';
+    const dg = !hs && hm === 'degrade';
     const ph = photosFor(e.id);
     const qt = qteOf(e);
-    html += '<div class="row-item" data-e="' + e.id + '" style="border-left:5px solid #' + (hs ? 'c0392b' : (st === 'ok' ? '1a9d5a' : 'c3cad0')) + '">' +
-      '<div class="row-icon">' + (hs ? '⚠️' : (st === 'ok' ? '✓' : '⚡')) + '</div>' +
+    html += '<div class="row-item" data-e="' + e.id + '" style="border-left:5px solid #' + (hs ? 'c0392b' : (dg ? 'e0892a' : (st === 'ok' ? '1a9d5a' : 'c3cad0'))) + '">' +
+      '<div class="row-icon">' + (hs ? '⚠️' : (dg ? '🛠️' : (st === 'ok' ? '✓' : '⚡'))) + '</div>' +
       '<div class="row-body">' +
-      '<div class="row-title">' + esc(e.name) + (qt > 1 ? ' <span style="color:#0d7a6f;font-weight:800">×' + qt + '</span>' : '') + (hs ? ' <span style="color:#c0392b;font-weight:800">HS</span>' : '') + '</div>' +
+      '<div class="row-title">' + esc(e.name) + (qt > 1 ? ' <span style="color:#0d7a6f;font-weight:800">×' + qt + '</span>' : '') + (hs ? ' <span style="color:#c0392b;font-weight:800">EN PANNE</span>' : (dg ? ' <span style="color:#e0892a;font-weight:800">DÉGRADÉ</span>' : '')) + '</div>' +
       '<div class="row-desc">' + esc(f.local || 'Local non spécifié') + ' · ' + ph.length + ' photo(s)</div>' +
       '</div>' +
       '<button class="rowact" data-eact="' + e.id + '">⋯</button>' +
@@ -1111,6 +1169,27 @@ function renderEquip(){
     '<button class="btn sec" id="addEquipPhoto" style="margin-top:9px">' + IC.cam + ' Ajouter une photo</button>' +
     '</div>';
 
+  // ---- Panneau Maintenance : état de santé + historique des interventions ----
+  if(window.MAINT){
+    const hm = MAINT.health(e.id);
+    const its = MAINT.forEquip(e.id).slice().reverse();
+    html += '<div class="panel">' +
+      '<h2>Maintenance — historique</h2>' +
+      (hm ? '<div class="badge" style="background:' + MAINT.healthColor(hm) + ';color:#fff">État : ' + MAINT.healthLabel(hm) + '</div>' : '<div class="tiny muted">Aucune intervention enregistrée sur cet équipement.</div>');
+    its.slice(0, 8).forEach(it => {
+      const s = MAINT.statutInfo(it);
+      html += '<div class="mhist" data-iid="' + esc(it._id) + '" style="padding:8px 0;border-top:1px solid #eef1f2;cursor:pointer">' +
+        '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px">' +
+        '<b>' + MAINT.frDate(it.date) + ' · ' + esc(MAINT.natLabel(it)) + '</b>' +
+        '<span style="color:' + s.color + ';font-weight:800;font-size:11.5px;white-space:nowrap">' + esc(s.label.split(' — ')[0].split(' (')[0]) + '</span></div>' +
+        '<div class="tiny muted">' + esc((it.sympt || it.action || '').slice(0, 80)) + (it.tech ? ' · ' + esc(it.tech) : '') + '</div>' +
+        '</div>';
+    });
+    if(its.length > 8) html += '<div class="tiny muted" style="padding-top:6px">… ' + (its.length - 8) + ' intervention(s) plus anciennes dans le module Maintenance</div>';
+    html += '<button class="btn sec" id="newInter" style="margin-top:9px">🛠️ Nouvelle intervention sur cet équipement</button>' +
+      '</div>';
+  }
+
   html += '<div class="panel">' +
     '<h2>Organisation</h2>' +
     '<button class="btn sec" id="renEq">✏️ Renommer cet équipement</button>' +
@@ -1216,6 +1295,13 @@ function renderEquip(){
 
   $('addPlatePhoto').onclick = () => triggerPhoto(e.id, true);
   $('addEquipPhoto').onclick = () => triggerPhoto(e.id, false);
+
+  if(window.MAINT){
+    if($('newInter')) $('newInter').onclick = () => MAINT.openForEquip(e.id);
+    document.querySelectorAll('.mhist[data-iid]').forEach(el => {
+      el.onclick = () => MAINT.openDetail(el.dataset.iid);
+    });
+  }
 
   $('renEq').onclick = () => sheetInput('Renommer l’équipement', '', e.name, 'Renommer', v => { renameEquipStruct(e.id, v); nav('equip'); toast('Équipement renommé'); });
   $('dupEq').onclick = () => { toast('Duplication…'); duplicateEquip(e.id).then(() => { view.equipId = null; nav('room'); toast('Équipement dupliqué (photos incluses)'); }); };
@@ -1380,6 +1466,24 @@ function renderWelcome(){
     '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
     '</div>';
 
+  /* carte 3 : maintenance */
+  const nInt = (window.MAINT && MAINT.count) ? MAINT.count() : 0;
+  const nOpen = (window.MAINT && MAINT.openCount) ? MAINT.openCount() : 0;
+  const nStop = (window.MAINT && MAINT.stopCount) ? MAINT.stopCount() : 0;
+  const lastInt = (window.MAINT && MAINT.lastLabel) ? MAINT.lastLabel() : null;
+  html += '<div id="welMaint" style="border-radius:16px;padding:15px 16px;margin-bottom:13px;color:#fff;cursor:pointer;' +
+    'background:linear-gradient(135deg,#b3541e,#7a3811);box-shadow:0 2px 8px rgba(179,84,30,.3)">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+    '<div style="font-size:30px">🛠️</div>' +
+    '<div style="flex:1;min-width:0">' +
+    '<div style="font-size:16.5px;font-weight:800">Maintenance — Interventions &amp; pannes' +
+    (nOpen ? ' <span style="background:#fff;color:#b3541e;border-radius:9px;padding:1px 8px;font-size:12.5px;vertical-align:2px">' + nOpen + '</span>' : '') + '</div>' +
+    '<div style="font-size:12.5px;opacity:.92;margin-top:2px">' +
+    (nInt ? (nOpen + ' en cours' + (nStop ? ' · ' + nStop + ' équip. à l\'arrêt' : '') + ' · dern. : ' + lastInt)
+          : 'Signalements · registre des interventions · historique par équipement') + '</div>' +
+    '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
+    '</div>';
+
   /* repères audit */
   html += '<div class="panel"><h2>Situation énergétique de référence (SER)</h2>' +
     '<div style="display:flex;gap:9px;flex-wrap:wrap">' +
@@ -1396,6 +1500,7 @@ function renderWelcome(){
   $('app').innerHTML = html;
   $('welEquip').onclick = () => nav('home');
   $('welMes').onclick = () => nav('mesures');
+  $('welMaint').onclick = () => nav('maint');
 }
 
 /* ====================== NAVIGATION ====================== */
@@ -1408,6 +1513,10 @@ function nav(name){
   else if(name === 'mesures'){
     if(window.MESURES) MESURES.render();
     else $('app').innerHTML = '<div class="panel"><b>Module mesures en cours de chargement…</b><div class="tiny muted" style="margin-top:5px">Revenez à l\'accueil et réessayez dans quelques secondes.</div></div>';
+  }
+  else if(name === 'maint'){
+    if(window.MAINT) MAINT.render();
+    else $('app').innerHTML = '<div class="panel"><b>Module maintenance en cours de chargement…</b><div class="tiny muted" style="margin-top:5px">Revenez à l\'accueil et réessayez dans quelques secondes.</div></div>';
   }
   else if(name === 'home') renderHome();
   else if(name === 'bilan') renderBilan();
@@ -1504,6 +1613,8 @@ async function boot(){
 
   // Campagne de mesures (module mesures.js)
   state.mesures = state.mesures || {};
+  // Maintenance (module maintenance.js)
+  state.inter = state.inter || {};
 
   nav('welcome');
 
@@ -1520,6 +1631,7 @@ if('serviceWorker' in navigator){
 boot().then(() => { window.__APP_READY = true; });
 </script>
 <script src="./mesures.js"></script>
+<script src="./maintenance.js"></script>
 <script src="./sync.js"></script>
 </body>
 </html>
