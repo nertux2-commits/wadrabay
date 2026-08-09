@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Formation Apnée — Stage initial IE/MEF1 · Lifou 2026</title>
+<style>
+  :root{
+    --navy:#0a2942; --ocean:#065a82; --teal:#1c7293; --ice:#dcebf5; --card:#f2f7fb;
+    --ink:#1f3347; --mut:#5b7288; --coral:#d9541e; --green:#2c8c5a; --greenbg:#e7f3ec; --redbg:#fbe9e1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI', Calibri, Arial, sans-serif; background:#f6fafd; color:var(--ink);}
+  a{color:var(--ocean);}
+
+  /* ---------- LOGIN ---------- */
+  #login{position:fixed; inset:0; background:linear-gradient(160deg,var(--navy) 0%, #0d3a5c 60%, var(--ocean) 100%); display:flex; align-items:center; justify-content:center; z-index:100;}
+  .bulle{position:absolute; border-radius:50%; background:rgba(28,114,147,.25);}
+  .login-box{position:relative; background:rgba(255,255,255,.06); border:1px solid rgba(143,197,232,.3); backdrop-filter:blur(6px); border-radius:16px; padding:42px 38px; width:min(420px, 92vw); text-align:center; color:#fff;}
+  .login-box .logo{background:#fff; border-radius:12px; padding:12px 18px; display:inline-block; margin:0 auto 18px;}
+  .login-box .logo img{display:block; height:40px;}
+  .login-box h1{font-family:Cambria, Georgia, serif; font-size:1.5rem; margin-bottom:6px;}
+  .login-box .sous{color:#8fc5e8; font-size:.82rem; letter-spacing:2px; text-transform:uppercase; margin-bottom:24px;}
+  .login-box input{width:100%; padding:13px 16px; border-radius:10px; border:1px solid rgba(143,197,232,.4); background:rgba(255,255,255,.92); font-size:1rem; text-align:center; letter-spacing:1px;}
+  .login-box button{width:100%; margin-top:14px; padding:13px; border:none; border-radius:10px; background:var(--coral); color:#fff; font-size:1rem; font-weight:bold; cursor:pointer;}
+  .login-box button:hover{filter:brightness(1.1);}
+  #login-err{color:#ffb59a; font-size:.85rem; margin-top:12px; min-height:1.2em;}
+  .login-note{margin-top:20px; font-size:.75rem; color:#7fa8c4;}
+
+  /* ---------- APP ---------- */
+  #app{display:none;}
+  header{background:var(--navy); color:#fff; padding:14px 5%; display:flex; align-items:center; gap:16px; flex-wrap:wrap; position:sticky; top:0; z-index:50;}
+  header .titre{font-family:Cambria, Georgia, serif; font-weight:bold; font-size:1.05rem;}
+  header .assoc{font-size:.7rem; color:#8fc5e8; letter-spacing:1.5px; text-transform:uppercase;}
+  nav{margin-left:auto; display:flex; gap:6px; flex-wrap:wrap;}
+  nav button{background:transparent; border:none; color:#cfe3f2; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:.92rem;}
+  nav button.actif{background:var(--ocean); color:#fff; font-weight:bold;}
+  nav button:hover{background:rgba(28,114,147,.5);}
+  #user-chip{background:rgba(28,114,147,.4); border:1px solid rgba(143,197,232,.35); color:#dcebf5; font-size:.78rem; padding:5px 12px; border-radius:99px;}
+  #btn-logout{background:none; border:none; color:#8fc5e8; cursor:pointer; font-size:.78rem; text-decoration:underline;}
+
+  main{max-width:1080px; margin:0 auto; padding:34px 5% 80px;}
+  .section{display:none;}
+  .section.actif{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1;}}
+  h2{font-family:Cambria, Georgia, serif; font-size:1.7rem; margin-bottom:4px;}
+  .kicker{color:var(--teal); font-size:.75rem; font-weight:bold; letter-spacing:2.5px; text-transform:uppercase;}
+  .intro{color:var(--mut); margin:8px 0 26px; max-width:70ch;}
+
+  .cartes{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px;}
+  .carte{background:var(--card); border-radius:14px; padding:20px; box-shadow:0 2px 8px rgba(10,41,66,.08);}
+  .carte h3{font-size:1.02rem; margin-bottom:8px; display:flex; gap:10px; align-items:center;}
+  .carte p{font-size:.87rem; color:var(--mut); line-height:1.45;}
+  .badge{display:inline-block; background:var(--ice); color:var(--ocean); font-size:.68rem; font-weight:bold; padding:3px 9px; border-radius:99px; margin-bottom:10px;}
+  .dl{display:inline-block; margin-top:14px; background:var(--ocean); color:#fff; text-decoration:none; font-size:.85rem; font-weight:bold; padding:9px 16px; border-radius:9px;}
+  .dl:hover{background:var(--teal);}
+  .cat-titre{font-family:Cambria, Georgia, serif; font-size:1.2rem; margin:30px 0 14px; color:var(--ocean);}
+
+  /* accueil */
+  .hero{background:linear-gradient(150deg,var(--navy), var(--ocean)); color:#fff; border-radius:18px; padding:38px 34px; margin-bottom:26px; position:relative; overflow:hidden;}
+  .hero h2{color:#fff; font-size:1.9rem;}
+  .hero .dates{color:#8fc5e8; font-weight:bold; margin-top:8px;}
+  .hero .b1,.hero .b2{position:absolute; border-radius:50%; background:rgba(28,114,147,.35);}
+  .b1{width:220px;height:220px; right:-60px; top:-80px;} .b2{width:120px;height:120px; right:110px; bottom:-50px;}
+  .infos{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
+  .info{background:#fff; border:1px solid #e2edf5; border-radius:12px; padding:16px;}
+  .info b{color:var(--ocean); display:block; margin-bottom:6px; font-size:.9rem;}
+  .info span{font-size:.85rem; color:var(--mut); line-height:1.4;}
+  .alerte{background:var(--redbg); border-radius:12px; padding:14px 18px; margin-top:18px; font-size:.88rem; color:#7a3a16;}
+
+  /* programme */
+  .jour{background:#fff; border:1px solid #e2edf5; border-radius:14px; margin-bottom:20px; overflow:hidden;}
+  .jour-titre{background:var(--ocean); color:#fff; padding:12px 20px; font-weight:bold; font-family:Cambria, Georgia, serif; font-size:1.05rem;}
+  .ligne{display:grid; grid-template-columns:130px 1fr 190px; gap:10px; padding:10px 20px; border-top:1px solid #eef4f9; font-size:.87rem; align-items:center;}
+  .ligne:nth-child(even){background:#f8fbfd;}
+  .ligne .h{color:var(--ocean); font-weight:bold; white-space:nowrap;}
+  .ligne .qui{color:var(--mut); font-size:.78rem; text-align:right;}
+  .ligne.pause{color:var(--mut); font-style:italic; background:var(--ice);}
+  @media(max-width:640px){ .ligne{grid-template-columns:90px 1fr;} .ligne .qui{display:none;} }
+
+  /* photos */
+  .galerie{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;}
+  .galerie figure{border-radius:12px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(10,41,66,.08); cursor:pointer;}
+  .galerie img{width:100%; height:160px; object-fit:cover; display:block;}
+  .galerie figcaption{font-size:.78rem; color:var(--mut); padding:8px 10px;}
+  .vide{background:var(--ice); border-radius:14px; padding:34px; text-align:center; color:var(--ocean); font-size:.95rem; line-height:1.6;}
+  #lightbox{display:none; position:fixed; inset:0; background:rgba(10,41,66,.92); z-index:200; align-items:center; justify-content:center; flex-direction:column; gap:12px;}
+  #lightbox img{max-width:92vw; max-height:82vh; border-radius:8px;}
+  #lightbox div{color:#dcebf5; font-size:.9rem;}
+  footer{text-align:center; color:#9db4c6; font-size:.75rem; padding:30px 5%;}
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE DE CONNEXION ============ -->
+<div id="login">
+  <div class="bulle" style="width:300px;height:300px;right:8%;top:-90px;"></div>
+  <div class="bulle" style="width:150px;height:150px;left:6%;bottom:10%;"></div>
+  <div class="bulle" style="width:60px;height:60px;left:18%;bottom:28%;"></div>
+  <form class="login-box" onsubmit="connexion(event)">
+    <div class="logo"><img src="assets/logo-ffessm-apnee.jpg" alt="FFESSM Apnée"></div>
+    <div class="sous">ASA · Wëtresij · FFESSM</div>
+    <h1>Formation Apnée<br>Stage initial IE / MEF1 — Lifou 2026</h1>
+    <p style="font-size:.85rem;color:#b9d4e6;margin-bottom:16px;">Espace réservé aux formateurs et stagiaires.</p>
+    <input type="password" id="pw" placeholder="Votre mot de passe personnel" autocomplete="current-password" autofocus>
+    <button type="submit">Entrer</button>
+    <div id="login-err"></div>
+    <div class="login-note">Mot de passe oublié ? Contactez votre formateur.</div>
+  </form>
+</div>
+
+<!-- ============ APPLICATION ============ -->
+<div id="app">
+  <header>
+    <div style="background:#fff; border-radius:8px; padding:5px 10px;"><img src="assets/logo-ffessm-apnee.jpg" alt="FFESSM Apnée" style="display:block; height:26px;"></div>
+    <div>
+      <div class="assoc">ASA · Wëtresij · FFESSM</div>
+      <div class="titre">Stage initial IE / MEF1 — Lifou 2026</div>
+    </div>
+    <nav>
+      <button data-s="accueil" class="actif" onclick="aller('accueil')">Accueil</button>
+      <button data-s="programme" onclick="aller('programme')">Programme</button>
+      <button data-s="supports" onclick="aller('supports')">Supports</button>
+      <button data-s="photos" onclick="aller('photos')">Photos</button>
+    </nav>
+    <span id="user-chip"></span>
+    <button id="btn-logout" onclick="deconnexion()">se déconnecter</button>
+  </header>
+
+  <main>
+    <!-- ACCUEIL -->
+    <section id="s-accueil" class="section actif">
+      <div class="hero">
+        <div class="b1"></div><div class="b2"></div>
+        <div class="kicker" style="color:#8fc5e8;">Bienvenue</div>
+        <h2>Stage initial Initiateur-Entraîneur & MEF1 Apnée</h2>
+        <div class="dates">📍 Lifou (Luecila) · 🗓️ 7, 8 et 9 août 2026</div>
+        <p style="margin-top:14px; max-width:60ch; color:#dcebf5; font-size:.95rem;">
+          Cet espace centralise tout ce dont vous avez besoin pour le stage : le programme détaillé,
+          les supports de cours à télécharger, les informations pratiques et les photos du week-end.
+        </p>
+      </div>
+      <div class="infos">
+        <div class="info"><b>🏠 Hébergement & cours</b><span>Tout se déroule sur place à Luecila, chez la famille Mole de « Pothe » : hébergement, cours théoriques (préau près de la case), repas et cuisine.</span></div>
+        <div class="info"><b>🍽️ Repas</b><span>Déjeuners du samedi et du dimanche pris en charge. Les repas du soir sont cuisinés tous ensemble.</span></div>
+        <div class="info"><b>🚗 Transport</b><span>Pas de location de voiture : nous restons sur place. Voitures personnelles si besoin. Prévoir une carte EEC de 3 000 F.</span></div>
+        <div class="info"><b>👥 Arrivée</b><span>Les camarades de l'ASA (8 personnes) arrivent le vendredi 7 au matin — accueil prévu. Retour le lundi 10.</span></div>
+      </div>
+      <div class="alerte">
+        <b>Important — participants Wëtresij :</b> renouvellement des licences, certificats médicaux à jour, et prévoir 5 000 F.
+      </div>
+    </section>
+
+    <!-- PROGRAMME -->
+    <section id="s-programme" class="section">
+      <div class="kicker">Programme officiel</div>
+      <h2>Les trois jours du stage</h2>
+      <p class="intro">Programme du stage initial IE et MEF1 Apnée — 7, 8 et 9 août 2026, Lifou. La version PDF officielle est téléchargeable dans l'onglet Supports.</p>
+
+      <div class="jour">
+        <div class="jour-titre">Vendredi 7 août — Préparation</div>
+        <div class="ligne"><span class="h">14h00 – 18h00</span><span>Préparation de la salle (tableau, vidéoprojecteur) et concertation des MEF1/MEF2 pour la présentation des cours</span><span class="qui">Wëtresij, MEF1, MEF2, IRA</span></div>
+      </div>
+
+      <div class="jour">
+        <div class="jour-titre">Samedi 8 août — Journée 1</div>
+        <div class="ligne"><span class="h">08h00 – 08h30</span><span>Ouverture du stage et présentation de chacun</span><span class="qui">IRA, cadres et stagiaires</span></div>
+        <div class="ligne"><span class="h">08h30 – 09h15</span><span>Prérogatives Initiateur / Moniteur et cursus</span><span class="qui">Prépa MEF1 + MEF2</span></div>
+        <div class="ligne"><span class="h">09h15 – 10h15</span><span>Réglementation de la pratique</span><span class="qui">Prépa MEF2</span></div>
+        <div class="ligne pause"><span class="h">10h15 – 10h30</span><span>Pause</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">10h30 – 11h30</span><span>Organisation de la sécurité</span><span class="qui">Prépa MEF2</span></div>
+        <div class="ligne"><span class="h">11h30 – 12h30</span><span>Pédagogie pratique : construction d'une séance</span><span class="qui">Prépa MEF1 + MEF1 + MEF2</span></div>
+        <div class="ligne pause"><span class="h">12h30 – 14h00</span><span>Déjeuner</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">14h00 – 15h00</span><span>Préparation des sujets en groupe (distribution des sujets)</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">15h00 – 16h30</span><span>Présentation des sujets au tableau (3)</span><span class="qui">20' présentation + 10' correction</span></div>
+        <div class="ligne pause"><span class="h">16h30 – 16h45</span><span>Pause</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">16h45 – 17h45</span><span>Suite des présentations au tableau (2)</span><span class="qui">20' présentation + 10' correction</span></div>
+        <div class="ligne"><span class="h">17h45 – 18h15</span><span>Débriefing — fin de la 1ère journée</span><span class="qui"></span></div>
+      </div>
+
+      <div class="jour">
+        <div class="jour-titre">Dimanche 9 août — Journée 2</div>
+        <div class="ligne"><span class="h">08h00 – 08h15</span><span>Rappel rapide de la journée du samedi</span><span class="qui">IRA</span></div>
+        <div class="ligne"><span class="h">08h15 – 10h15</span><span>Physiologie et accidents en apnée</span><span class="qui">Prépa MEF2</span></div>
+        <div class="ligne pause"><span class="h">10h15 – 10h30</span><span>Pause</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">10h30 – 11h30</span><span>Paramètres de la performance</span><span class="qui">Prépa MEF2</span></div>
+        <div class="ligne"><span class="h">11h30 – 12h30</span><span>Construction d'un entraînement (cycle)</span><span class="qui">Prépa MEF2</span></div>
+        <div class="ligne pause"><span class="h">12h30 – 14h00</span><span>Déjeuner</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">14h00 – 15h00</span><span>Préparation des sujets en groupe — « Préparation d'une progression » (au programme de l'examen MEF1, pas IE)</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">15h00 – 16h30</span><span>Présentation des sujets au tableau (3)</span><span class="qui">20' présentation + 10' correction</span></div>
+        <div class="ligne pause"><span class="h">16h30 – 16h45</span><span>Pause</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">16h45 – 17h45</span><span>Suite des présentations au tableau (2)</span><span class="qui">20' présentation + 10' correction</span></div>
+        <div class="ligne"><span class="h">17h45 – 18h15</span><span>Débriefing — fin de la 2e journée</span><span class="qui"></span></div>
+        <div class="ligne"><span class="h">18h30</span><span><b>Fin de stage, bilan et clôture</b></span><span class="qui">IRA</span></div>
+      </div>
+    </section>
+
+    <!-- SUPPORTS -->
+    <section id="s-supports" class="section">
+      <div class="kicker">Base documentaire</div>
+      <h2>Supports de présentation & contenu pédagogique</h2>
+      <p class="intro">Tous les documents du stage, classés par catégorie. Cliquez sur « Télécharger » pour récupérer un fichier. De nouveaux documents seront ajoutés au fur et à mesure.</p>
+      <div id="docs"></div>
+    </section>
+
+    <!-- PHOTOS -->
+    <section id="s-photos" class="section">
+      <div class="kicker">Souvenirs</div>
+      <h2>Photos du stage</h2>
+      <p class="intro">Les photos du groupe, du week-end et des séances.</p>
+      <div id="galerie"></div>
+    </section>
+  </main>
+
+  <footer>Espace privé — accès réservé aux formateurs et stagiaires · ASA · Wëtresij · FFESSM · Lifou 2026</footer>
+</div>
+
+<div id="lightbox" onclick="this.style.display='none'"><img id="lb-img" src=""><div id="lb-cap"></div></div>
+
+<script src="config/comptes.js"></script>
+<script src="config/documents.js"></script>
+<script src="config/photos.js"></script>
+<script>
+/* ---- SHA-256 (implémentation autonome, fonctionne aussi en local) ---- */
+function sha256(ascii){function rightRotate(v,a){return(v>>>a)|(v<<(32-a))}var mathPow=Math.pow,maxWord=mathPow(2,32),result="",words=[],asciiBitLength=ascii.length*8,hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],primeCounter=k.length,isComposite={};for(var candidate=2;primeCounter<64;candidate++){if(!isComposite[candidate]){for(var i=0;i<313;i+=candidate){isComposite[i]=candidate}hash[primeCounter]=(mathPow(candidate,.5)*maxWord)|0;k[primeCounter++]=(mathPow(candidate,1/3)*maxWord)|0}}ascii+="\x80";while(ascii.length%64-56)ascii+="\x00";for(i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=(asciiBitLength/maxWord)|0;words[words.length]=asciiBitLength;for(j=0;j<words.length;){var w=words.slice(j,j+=16),oldHash=hash;hash=hash.slice(0,8);for(i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4],temp1=hash[7]+(rightRotate(e,6)^rightRotate(e,11)^rightRotate(e,25))+((e&hash[5])^(~e&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rightRotate(w15,7)^rightRotate(w15,18)^(w15>>>3))+w[i-7]+(rightRotate(w2,17)^rightRotate(w2,19)^(w2>>>10)))|0),temp2=(rightRotate(a,2)^rightRotate(a,13)^rightRotate(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(temp1+temp2)|0].concat(hash);hash[4]=(hash[4]+temp1)|0}for(i=0;i<8;i++){hash[i]=(hash[i]+oldHash[i])|0}}for(i=0;i<8;i++){for(j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:"")+b.toString(16)}}return result}
+
+function trouverCompte(hash){ return COMPTES.find(c => c.hash === hash) || null; }
+
+function connexion(e){
+  e.preventDefault();
+  const pw = document.getElementById('pw').value.trim().toLowerCase();
+  const compte = trouverCompte(sha256(pw));
+  if(compte){ sessionStorage.setItem('acces', compte.hash); demarrer(compte); }
+  else{ document.getElementById('login-err').textContent = "Mot de passe incorrect."; document.getElementById('pw').value=""; }
+}
+function deconnexion(){ sessionStorage.removeItem('acces'); location.reload(); }
+
+function demarrer(compte){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-chip').textContent = "👤 " + compte.nom + " · " + compte.role;
+  rendreDocs(); rendrePhotos();
+}
+function aller(s){
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('actif'));
+  document.getElementById('s-'+s).classList.add('actif');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('actif', b.dataset.s===s));
+  window.scrollTo({top:0});
+}
+function rendreDocs(){
+  const zone = document.getElementById('docs'); zone.innerHTML="";
+  CATEGORIES.forEach(cat=>{
+    const docs = DOCUMENTS.filter(d=>d.categorie===cat.id);
+    if(!docs.length) return;
+    const t = document.createElement('div'); t.className='cat-titre'; t.textContent = cat.icone+" "+cat.nom; zone.appendChild(t);
+    const grid = document.createElement('div'); grid.className='cartes';
+    docs.forEach(d=>{
+      const c = document.createElement('div'); c.className='carte';
+      c.innerHTML = '<span class="badge">'+d.type+'</span><h3>'+d.titre+'</h3><p>'+d.description+'</p><a class="dl" href="'+d.fichier+'" download>⬇ Télécharger</a>';
+      grid.appendChild(c);
+    });
+    zone.appendChild(grid);
+  });
+}
+function rendrePhotos(){
+  const g = document.getElementById('galerie'); g.innerHTML="";
+  if(!PHOTOS.length){
+    g.innerHTML = '<div class="vide">📷 La galerie est encore vide.<br>Les photos du groupe seront ajoutées ici au fil du stage — envoyez vos meilleures photos aux formateurs !</div>';
+    return;
+  }
+  const grid = document.createElement('div'); grid.className='galerie';
+  PHOTOS.forEach(p=>{
+    const f = document.createElement('figure');
+    f.innerHTML = '<img src="'+p.fichier+'" alt="" loading="lazy"><figcaption>'+(p.legende||'')+'</figcaption>';
+    f.onclick = ()=>{ document.getElementById('lb-img').src=p.fichier; document.getElementById('lb-cap').textContent=p.legende||''; document.getElementById('lightbox').style.display='flex'; };
+    grid.appendChild(f);
+  });
+  g.appendChild(grid);
+}
+/* session persistante pendant l'onglet */
+(function(){
+  const h = sessionStorage.getItem('acces');
+  if(h){ const c = trouverCompte(h); if(c) demarrer(c); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>Générateur de comptes (outil formateur — ne pas diffuser)</title>
+<style>
+  body{font-family:Calibri, Arial, sans-serif; background:#f6fafd; color:#1f3347; max-width:700px; margin:40px auto; padding:0 20px;}
+  h1{font-family:Cambria, serif; color:#065a82;}
+  input,button{font-size:1rem; padding:10px 14px; border-radius:8px; border:1px solid #b9d0e0;}
+  button{background:#065a82; color:#fff; border:none; cursor:pointer;}
+  pre{background:#dcebf5; padding:16px; border-radius:10px; white-space:pre-wrap; word-break:break-all; font-size:.9rem;}
+  .note{color:#5b7288; font-size:.9rem; line-height:1.5;}
+</style>
+</head>
+<body>
+<h1>Générateur de comptes</h1>
+<p class="note">Outil réservé aux formateurs. Pour ajouter un accès au site :<br>
+1. Choisissez un mot de passe pour la personne (ex. <i>lifou-baleine-33</i>) — en minuscules.<br>
+2. Tapez-le ci-dessous, cliquez sur Générer.<br>
+3. Copiez le bloc obtenu et collez-le dans le fichier <b>config/comptes.js</b>, dans la liste COMPTES.<br>
+4. Donnez le mot de passe à la personne (jamais par écrit sur le site).</p>
+<p><input id="nom" placeholder="Nom de la personne" style="width:45%"> <input id="pw" placeholder="mot de passe choisi" style="width:45%"></p>
+<p><label><input type="radio" name="r" value="stagiaire" checked> stagiaire</label> &nbsp; <label><input type="radio" name="r" value="formateur"> formateur</label></p>
+<p><button onclick="go()">Générer</button></p>
+<pre id="out">…</pre>
+<script>
+function sha256(ascii){function rightRotate(v,a){return(v>>>a)|(v<<(32-a))}var mathPow=Math.pow,maxWord=mathPow(2,32),result="",words=[],asciiBitLength=ascii.length*8,hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],primeCounter=k.length,isComposite={};for(var candidate=2;primeCounter<64;candidate++){if(!isComposite[candidate]){for(var i=0;i<313;i+=candidate){isComposite[i]=candidate}hash[primeCounter]=(mathPow(candidate,.5)*maxWord)|0;k[primeCounter++]=(mathPow(candidate,1/3)*maxWord)|0}}ascii+="\x80";while(ascii.length%64-56)ascii+="\x00";for(i=0;i<ascii.length;i++){var j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=(asciiBitLength/maxWord)|0;words[words.length]=asciiBitLength;for(j=0;j<words.length;){var w=words.slice(j,j+=16),oldHash=hash;hash=hash.slice(0,8);for(i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4],temp1=hash[7]+(rightRotate(e,6)^rightRotate(e,11)^rightRotate(e,25))+((e&hash[5])^(~e&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rightRotate(w15,7)^rightRotate(w15,18)^(w15>>>3))+w[i-7]+(rightRotate(w2,17)^rightRotate(w2,19)^(w2>>>10)))|0),temp2=(rightRotate(a,2)^rightRotate(a,13)^rightRotate(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(temp1+temp2)|0].concat(hash);hash[4]=(hash[4]+temp1)|0}for(i=0;i<8;i++){hash[i]=(hash[i]+oldHash[i])|0}}for(i=0;i<8;i++){for(j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:"")+b.toString(16)}}return result}
+function go(){
+  const nom=document.getElementById('nom').value.trim()||"Nouveau compte";
+  const pw=document.getElementById('pw').value.trim().toLowerCase();
+  const role=document.querySelector('input[name=r]:checked').value;
+  if(!pw){document.getElementById('out').textContent="Entrez un mot de passe.";return;}
+  document.getElementById('out').textContent=
+'  {\n    "nom": "'+nom+'",\n    "role": "'+role+'",\n    "hash": "'+sha256(pw)+'"\n  },';
+}
+</script>
+</body>
+</html>
