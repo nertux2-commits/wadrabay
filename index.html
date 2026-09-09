@@ -809,6 +809,10 @@ function renderHeader(){
     h.innerHTML = '<button class="hbtn" id="goWelM">' + IC.back + '</button>' +
       '<div class="htitle">Campagne de mesures — Pince</div>';
     $('goWelM').onclick = () => { if(window.MESURES && MESURES.back && MESURES.back()) return; nav('welcome'); };
+  } else if(view.name === 'lux'){
+    h.innerHTML = '<button class="hbtn" id="goWelL">' + IC.back + '</button>' +
+      '<div class="htitle">Éclairement — Luxmètre</div>';
+    $('goWelL').onclick = () => { if(window.LUX && LUX.back && LUX.back()) return; nav('welcome'); };
   } else if(view.name === 'maint'){
     h.innerHTML = '<button class="hbtn" id="goWelI">' + IC.back + '</button>' +
       '<div class="htitle">Maintenance — Interventions</div>';
@@ -1470,6 +1474,22 @@ function renderWelcome(){
     '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
     '</div>';
 
+  /* carte 2b : éclairement (luxmètre) */
+  const nLux = (window.LUX && LUX.count) ? LUX.count() : 0;
+  const lastLux = (window.LUX && LUX.lastLabel) ? LUX.lastLabel() : null;
+  const nGis = (window.LUX && LUX.gisements) ? LUX.gisements() : 0;
+  html += '<div id="welLux" style="border-radius:16px;padding:15px 16px;margin-bottom:13px;color:#fff;cursor:pointer;' +
+    'background:linear-gradient(135deg,#b8860b,#7a5a06);box-shadow:0 2px 8px rgba(184,134,11,.3)">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+    '<div style="font-size:30px">💡</div>' +
+    '<div style="flex:1;min-width:0">' +
+    '<div style="font-size:16.5px;font-weight:800">Éclairement — Luxmètre' +
+    (nGis ? ' <span style="background:#fff;color:#7a5a06;border-radius:9px;padding:1px 8px;font-size:12.5px;vertical-align:2px">' + nGis + '</span>' : '') + '</div>' +
+    '<div style="font-size:12.5px;opacity:.92;margin-top:2px">' +
+    (nLux ? (nLux + ' relevé(s)' + (nGis ? ' · ' + nGis + ' gisement(s)' : '') + ' · dern. : ' + lastLux) : 'Campagne de nuit · références EN 12464 / EN 13201 / EN 1838') + '</div>' +
+    '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
+    '</div>';
+
   /* carte 3 : maintenance */
   const nInt = (window.MAINT && MAINT.count) ? MAINT.count() : 0;
   const nOpen = (window.MAINT && MAINT.openCount) ? MAINT.openCount() : 0;
@@ -1504,6 +1524,7 @@ function renderWelcome(){
   $('app').innerHTML = html;
   $('welEquip').onclick = () => nav('home');
   $('welMes').onclick = () => nav('mesures');
+  $('welLux').onclick = () => nav('lux');
   $('welMaint').onclick = () => nav('maint');
 }
 
@@ -1517,6 +1538,10 @@ function nav(name){
   else if(name === 'mesures'){
     if(window.MESURES) MESURES.render();
     else $('app').innerHTML = '<div class="panel"><b>Module mesures en cours de chargement…</b><div class="tiny muted" style="margin-top:5px">Revenez à l\'accueil et réessayez dans quelques secondes.</div></div>';
+  }
+  else if(name === 'lux'){
+    if(window.LUX) LUX.render();
+    else $('app').innerHTML = '<div class="panel"><b>Module éclairement en cours de chargement…</b><div class="tiny muted" style="margin-top:5px">Revenez à l\'accueil et réessayez dans quelques secondes.</div></div>';
   }
   else if(name === 'maint'){
     if(window.MAINT) MAINT.render();
@@ -1619,6 +1644,8 @@ async function boot(){
   state.mesures = state.mesures || {};
   // Maintenance (module maintenance.js)
   state.inter = state.inter || {};
+  // Éclairement luxmètre (module lux.js)
+  state.lux = state.lux || {};
 
   nav('welcome');
 
@@ -1635,6 +1662,7 @@ if('serviceWorker' in navigator){
 boot().then(() => { window.__APP_READY = true; });
 </script>
 <script src="./mesures.js"></script>
+<script src="./lux.js"></script>
 <script src="./maintenance.js"></script>
 <script src="./sync.js"></script>
 </body>
