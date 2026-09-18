@@ -28,7 +28,7 @@
     { key: "hydr",  label: "Hydraulique / plomberie",    ic: "💧" },
     { key: "froid", label: "Froid / climatisation",      ic: "❄️" },
     { key: "regul", label: "Régulation / automatisme",   ic: "🎛️" },
-    { key: "fuite", label: "Fuite / étanchéité",         ic: "💦" },
+    { key: "fuite", label: "Fuite / étanchéité",          ic: "💦" },
     { key: "usure", label: "Usure / vétusté",            ic: "🪫" },
     { key: "autre", label: "Autre",                      ic: "🔧" }
   ];
@@ -159,11 +159,13 @@
     return hit;
   }
   function eqLabel(r) {
+    if (r.hebg) return (window.HEBG ? HEBG.keyLabel(r.hebg) : "Clé " + r.hebg) + (r.equipTxt ? " — " + r.equipTxt : "");
     var inf = eqInfo(r.equip);
     if (inf) return inf.name;
     return r.equipTxt || "Équipement non précisé";
   }
   function eqPlace(r) {
+    if (r.hebg) return "Hébergement · clé " + r.hebg;
     var inf = eqInfo(r.equip);
     return inf ? (inf.zone + " · " + inf.room) : "";
   }
@@ -210,7 +212,7 @@
   }
 
   /* -------------------- état interne du module -------------------- */
-  var V = { screen: "dash", id: null, editId: null, draft: null, mode: null, preEquip: null, q: "" };
+  var V = { screen: "dash", id: null, editId: null, draft: null, mode: null, preEquip: null, preKey: null, q: "" };
 
   function cleanDraftPhotos() { /* photos prises sur une fiche jamais enregistrée */
     if (!V.draft) return;
@@ -293,7 +295,12 @@
       '<div style="font-size:19px;font-weight:800">' + rows.length + '</div><div style="font-size:11px;opacity:.9">interventions</div></div>' +
       '</div></div>';
 
-    html += '<button class="btn primary" id="iSignal" style="background:#c0392b">🚨 Signaler une panne (30 secondes)</button>' +
+    if (window.HEBG) {
+      var hc = HEBG.counts();
+      html += '<button class="btn primary" id="iHebg" style="background:#1f7a8c">🏠 Chambres &amp; bungalows — état et travaux' +
+        (hc.total ? ' <span style="background:#fff;color:#1f7a8c;border-radius:9px;padding:1px 8px;font-size:12.5px">' + hc.total + '</span>' : '') + '</button>';
+    }
+    html += '<button class="btn primary" id="iSignal" style="background:#c0392b;margin-top:9px">🚨 Signaler une panne (30 secondes)</button>' +
       '<button class="btn primary" id="iNew" style="background:#b3541e;margin-top:9px">🛠️ Nouvelle intervention (correctif)</button>' +
       '<button class="btn primary" id="iPrev" style="background:#0d7a6f;margin-top:9px">🧰 Entretien préventif</button>';
 
@@ -308,6 +315,7 @@
     html += '<div id="iList"></div>';
 
     $("app").innerHTML = html;
+    if ($("iHebg")) $("iHebg").onclick = function () { nav("hebg"); };
     $("iSignal").onclick = function () { openForm(null, null, "signal"); };
     $("iNew").onclick = function () { openForm(null, null, "cor"); };
     $("iPrev").onclick = function () { openForm(null, null, "prev"); };
@@ -362,6 +370,7 @@
     }
     html += '<button class="btn sec" id="iEdit" style="margin-top:9px">✏️ Modifier la fiche</button>';
     if (r.equip) html += '<button class="btn sec" id="iGoEq" style="margin-top:9px">📋 Voir l\'équipement (historique complet)</button>';
+    if (r.hebg && window.HEBG) html += '<button class="btn sec" id="iGoKey" style="margin-top:9px">🏠 Ouvrir la clé ' + esc(r.hebg) + '</button>';
     html += '<button class="btn sec" id="iDel" style="margin-top:9px;color:#c0392b;border-color:#e7b3ab">🗑 Supprimer cette fiche</button>';
 
     $("app").innerHTML = html;
@@ -389,6 +398,7 @@
       view.tdId = inf.zoneId; view.roomId = inf.roomId; view.equipId = inf.id;
       nav("equip");
     };
+    if ($("iGoKey")) $("iGoKey").onclick = function () { HEBG.openKey(r.hebg); };
     $("iDel").onclick = function () {
       sheetConfirm("Supprimer cette fiche ?", "L'historique de l'équipement perdra cette intervention.", "Supprimer", true, function () {
         var eq = (ensureI()[V.id] || {}).equip;
@@ -440,7 +450,9 @@
     openSheet('<h3>Équipement concerné</h3>' +
       '<input id="peQ" type="text" placeholder="Rechercher : nom, zone, pièce…" style="margin-bottom:8px">' +
       '<div id="peList" style="max-height:44vh;overflow:auto;margin-bottom:6px"></div>' +
-      '<div class="sbtns"><button class="sbtn-cancel" id="peCancel">Annuler</button><button class="sbtn-ok" id="peNew">＋ Créer</button></div>');
+      '<div class="sbtns"><button class="sbtn-cancel" id="peCancel">Annuler</button>' +
+      (window.HEBG ? '<button class="sbtn-ok" id="peKey" style="background:#1f7a8c">🏠 Clé</button>' : '') +
+      '<button class="sbtn-ok" id="peNew">＋ Créer</button></div>');
     function paint() {
       var q = norm($("peQ").value);
       var list = idx.filter(function (e) {
@@ -466,6 +478,13 @@
         el.onclick = function () { closeSheet(); cb(el.dataset.eid); };
       });
     }
+    if ($("peKey")) $("peKey").onclick = function () {
+      closeSheet();
+      setTimeout(function () {
+        sheetChoose("Chambre / bungalow concerné", "", HEBG.keys().map(function (k) { return { label: "🏠 " + k.label, value: k.id }; }),
+          function (kid) { cb(null, kid); });
+      }, 200);
+    };
     $("peQ").addEventListener("input", paint);
     $("peCancel").onclick = closeSheet;
     $("peNew").onclick = function () {
@@ -491,11 +510,12 @@
   }
 
   /* -------------------- RENDU : formulaire -------------------- */
-  function openForm(preEquip, editId, mode) {
+  function openForm(preEquip, editId, mode, preKey) {
     V.screen = "form";
     V.editId = editId || null;
     V.mode = editId ? null : (mode || "cor");
     V.preEquip = preEquip || null;
+    V.preKey = preKey || null;
     if (!editId) V.draft = "it_" + rndId();
     render();
   }
@@ -506,7 +526,7 @@
     var cur = edit ? Object.assign({}, edit) : {
       type: V.mode === "prev" ? "prev" : "cor",
       statut: isSignal ? "signale" : (V.mode === "prev" ? "fait" : "encours"),
-      equip: V.preEquip, equipTxt: "",
+      equip: V.preEquip, hebg: V.preKey || "", equipTxt: "",
       date: nowDate(), heure: nowTime(),
       nature: "", gamme: "", sympt: "", cause: "", action: "", pieces: "",
       arret: false, dateRes: "", heureRes: "", ctrl: false,
@@ -527,7 +547,7 @@
 
     html += '<label class="fld"><span>Équipement concerné</span>' +
       '<button type="button" class="btn sec" id="fEq" style="justify-content:flex-start;text-align:left;padding:10px 12px">' +
-      (cur.equip ? "📋 " + esc(eqLabel(cur)) + '<span class="tiny muted" style="margin-left:6px">' + esc(eqPlace(cur)) + '</span>' : "👉 Choisir l\'équipement…") +
+      ((cur.equip || cur.hebg) ? (cur.hebg ? "🏠 " : "📋 ") + esc(eqLabel(cur)) + '<span class="tiny muted" style="margin-left:6px">' + esc(eqPlace(cur)) + '</span>' : "👉 Choisir l\'équipement ou la clé…") +
       '</button></label>' +
       '<div class="row2">' +
       '<label class="fld"><span>Date (auto, modifiable)</span><input type="date" id="fDate" value="' + esc(cur.date) + '"></label>' +
@@ -659,10 +679,15 @@
       }
     });
 
-    var selEquip = { id: cur.equip || null };
+    var selEquip = { id: cur.equip || null, hebg: cur.hebg || "" };
     $("fEq").onclick = function () {
-      pickEquip(function (eid) {
-        selEquip.id = eid;
+      pickEquip(function (eid, kid) {
+        if (kid) {
+          selEquip.id = null; selEquip.hebg = kid;
+          $("fEq").innerHTML = "🏠 " + esc(HEBG.keyLabel(kid)) + '<span class="tiny muted" style="margin-left:6px">Hébergement · clé ' + esc(kid) + '</span>';
+          return;
+        }
+        selEquip.id = eid; selEquip.hebg = "";
         var inf = eqInfo(eid);
         $("fEq").innerHTML = "📋 " + esc(inf ? inf.name : eid) +
           '<span class="tiny muted" style="margin-left:6px">' + esc(inf ? (inf.zone + " · " + inf.room) : "") + '</span>';
@@ -670,14 +695,15 @@
     };
 
     $("fSave").onclick = function () {
-      if (!selEquip.id) { toast("Choisir l'équipement concerné"); return; }
+      if (!selEquip.id && !selEquip.hebg) { toast("Choisir l'équipement ou la clé concernée"); return; }
       var t = typeSel ? typeSel.value : cur.type;
       var statut = isSignal ? "signale" : ($("fStatut") ? $("fStatut").value : cur.statut);
       var rec = {
         type: t,
         statut: statut,
-        equip: selEquip.id,
-        equipTxt: (eqInfo(selEquip.id) || {}).name || "",
+        equip: selEquip.id || "",
+        hebg: selEquip.hebg || "",
+        equipTxt: selEquip.hebg ? (cur.equipTxt || "") : ((eqInfo(selEquip.id) || {}).name || ""),
         date: $("fDate").value || nowDate(),
         heure: $("fTime").value || nowTime(),
         nature: $("fNature") ? $("fNature").value : (cur.nature || ""),
@@ -734,7 +760,7 @@
     rows.forEach(function (r, i) {
       var inf = eqInfo(r.equip);
       aoa.push([i + 1, r.type === "prev" ? "Préventif" : "Correctif", statutBy(r.statut).label,
-        eqLabel(r), inf ? inf.zone : "", inf ? inf.room : "",
+        eqLabel(r), inf ? inf.zone : (r.hebg ? "Hébergement" : ""), inf ? inf.room : (r.hebg ? "Clé " + r.hebg : ""),
         r.date, r.heure || "", natLabel(r),
         (r.sympt || "").replace(/\s+/g, " "), (r.cause || "").replace(/\s+/g, " "),
         (r.action || "").replace(/\s+/g, " "), r.pieces || "",
@@ -866,6 +892,11 @@
       nav("maint");
     },
     openDetail: function (id) { V.screen = "detail"; V.id = id; nav("maint"); },
+    openForKey: function (kid) {
+      V.screen = "form"; V.editId = null; V.mode = "cor"; V.preEquip = null; V.preKey = kid;
+      V.draft = "it_" + rndId();
+      nav("maint");
+    },
     photoAdded: function (key) {
       if (view.name !== "maint") return;
       if (V.screen === "form" && key === (V.editId || V.draft)) paintAllStrips("fPh", key);
