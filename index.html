@@ -818,7 +818,7 @@ function renderHeader(){
     $('goWelL').onclick = () => { if(window.LUX && LUX.back && LUX.back()) return; nav('welcome'); };
   } else if(view.name === 'hebg'){
     h.innerHTML = '<button class="hbtn" id="goWelH">' + IC.back + '</button>' +
-      '<div class="htitle">Chambres &amp; bungalows — État et travaux</div>';
+      '<div class="htitle">Maintenance — Interventions &amp; pannes</div>';
     $('goWelH').onclick = () => { if(window.HEBG && HEBG.back && HEBG.back()) return; nav('welcome'); };
   } else if(view.name === 'maint'){
     h.innerHTML = '<button class="hbtn" id="goWelI">' + IC.back + '</button>' +
@@ -1497,37 +1497,19 @@ function renderWelcome(){
     '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
     '</div>';
 
-  /* carte 2c : chambres & bungalows (état, travaux) */
+  /* carte 3 : maintenance — interventions & pannes (par lieu : chambres, bungalows, bâtiments) */
   const hc = (window.HEBG && HEBG.counts) ? HEBG.counts() : {hs:0, att:0, todo:0, total:0};
   const hLast = (window.HEBG && HEBG.lastDate) ? HEBG.lastDate() : null;
   html += '<div id="welHebg" style="border-radius:16px;padding:15px 16px;margin-bottom:13px;color:#fff;cursor:pointer;' +
     'background:linear-gradient(135deg,#1f7a8c,#0c3f48);box-shadow:0 2px 8px rgba(31,122,140,.3)">' +
     '<div style="display:flex;align-items:center;gap:12px">' +
-    '<div style="font-size:30px">🏠</div>' +
-    '<div style="flex:1;min-width:0">' +
-    '<div style="font-size:16.5px;font-weight:800">Chambres &amp; bungalows — état et travaux' +
-    (hc.total ? ' <span style="background:#fff;color:#1f7a8c;border-radius:9px;padding:1px 8px;font-size:12.5px;vertical-align:2px">' + hc.total + '</span>' : '') + '</div>' +
-    '<div style="font-size:12.5px;opacity:.92;margin-top:2px">' +
-    (hc.total ? (hc.hs + ' HS · ' + hc.att + ' à surveiller · ' + hc.todo + ' travaux' + (hLast ? ' · dern. passage : ' + hLast : ''))
-              : '50 clés · points à vérifier · travaux à faire · historique') + '</div>' +
-    '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
-    '</div>';
-
-  /* carte 3 : maintenance */
-  const nInt = (window.MAINT && MAINT.count) ? MAINT.count() : 0;
-  const nOpen = (window.MAINT && MAINT.openCount) ? MAINT.openCount() : 0;
-  const nStop = (window.MAINT && MAINT.stopCount) ? MAINT.stopCount() : 0;
-  const lastInt = (window.MAINT && MAINT.lastLabel) ? MAINT.lastLabel() : null;
-  html += '<div id="welMaint" style="border-radius:16px;padding:15px 16px;margin-bottom:13px;color:#fff;cursor:pointer;' +
-    'background:linear-gradient(135deg,#b3541e,#7a3811);box-shadow:0 2px 8px rgba(179,84,30,.3)">' +
-    '<div style="display:flex;align-items:center;gap:12px">' +
     '<div style="font-size:30px">🛠️</div>' +
     '<div style="flex:1;min-width:0">' +
     '<div style="font-size:16.5px;font-weight:800">Maintenance — Interventions &amp; pannes' +
-    (nOpen ? ' <span style="background:#fff;color:#b3541e;border-radius:9px;padding:1px 8px;font-size:12.5px;vertical-align:2px">' + nOpen + '</span>' : '') + '</div>' +
+    (hc.total ? ' <span style="background:#fff;color:#1f7a8c;border-radius:9px;padding:1px 8px;font-size:12.5px;vertical-align:2px">' + hc.total + '</span>' : '') + '</div>' +
     '<div style="font-size:12.5px;opacity:.92;margin-top:2px">' +
-    (nInt ? (nOpen + ' en cours' + (nStop ? ' · ' + nStop + ' équip. à l\'arrêt' : '') + ' · dern. : ' + lastInt)
-          : 'Signalements · registre des interventions · historique par équipement') + '</div>' +
+    (hc.total ? (hc.hs + ' HS · ' + hc.att + ' à surveiller · ' + hc.todo + ' travaux' + (hLast ? ' · dern. passage : ' + hLast : ''))
+              : 'Chambres, bungalows et tous les bâtiments · points à vérifier · travaux à faire') + '</div>' +
     '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
     '</div>';
 
@@ -1548,7 +1530,6 @@ function renderWelcome(){
   $('welEquip').onclick = () => nav('home');
   $('welMes').onclick = () => nav('mesures');
   $('welLux').onclick = () => nav('lux');
-  $('welMaint').onclick = () => nav('maint');
   $('welHebg').onclick = () => nav('hebg');
 }
 
