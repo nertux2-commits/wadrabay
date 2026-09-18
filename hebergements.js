@@ -1,5 +1,5 @@
 /* =====================================================================
-   WADRA Bay — Module HÉBERGEMENTS (état des chambres & bungalows, travaux)
+   WADRA Bay — Module MAINTENANCE par lieu (chambres, bungalows et tous les bâtiments)
    ---------------------------------------------------------------------
    Pensé pour le technicien : une clé = un écran, une liste de points à
    cocher (OK / à surveiller / HS), une liste de travaux à faire que l'on
@@ -7,6 +7,10 @@
    l'historique se construit tout seul.
    - 50 clés : villas Plage 101-105, bungalows Forêt 201-204,
      chambres 301-322 (bâtiments N et O), bungalows Lagune 401-419 ;
+   - + tous les autres lieux de l'hôtel (accueil, restaurant, bar, cuisine,
+     Sea Food, spa, salle polyvalente, administration, lingerie, atelier,
+     TGBT / groupe, piscine, lagunarium, STEP, WC, extérieurs, buanderies,
+     ascenseurs, logements du personnel, locaux techniques) ;
    - point de départ : le rapport de JC ALIKIE du 22 mars 2026 (seed) ;
    - « À faire » global regroupé par clé, export xlsx (état, travaux, historique) ;
    - stockage local (state.hebg) + synchro Supabase (type "hebg", id "hebg:101").
@@ -27,7 +31,28 @@
     chambre: { label: "Chambre",          short: "Chambre", color: "#5c6bc0",
                items: ["clim", "tv", "wifi", "brasseur", "ecl_int", "ecl_ext", "plomb", "divers"] },
     lagune:  { label: "Bungalow Lagune",  short: "Lagune",  color: "#0d7a6f",
-               items: ["clim", "pac", "tv", "wifi", "brasseur", "ecl_int", "ecl_ext", "plomb", "fplafond", "deck", "divers"] }
+               items: ["clim", "pac", "tv", "wifi", "brasseur", "ecl_int", "ecl_ext", "plomb", "fplafond", "deck", "divers"] },
+    /* ---- lieux communs et techniques ---- */
+    accueil: { label: "Accueil",            color: "#8e44ad", items: ["clim", "ecl_int", "ecl_ext", "elec", "wifi", "ecran", "menuis", "sanit", "secu", "divers"] },
+    resto:   { label: "Salle restaurant",   color: "#8e44ad", items: ["clim", "brasseur", "ecl_int", "ecl_ext", "elec", "sono", "menuis", "mobilier", "sanit", "secu", "divers"] },
+    bar:     { label: "Bar",                color: "#8e44ad", items: ["froid", "glacons", "ecl_int", "elec", "plomb", "menuis", "divers"] },
+    cuisine: { label: "Cuisine",            color: "#c0392b", items: ["froid", "congel", "cuisson", "hotte", "lavevaisselle", "ecs", "plomb", "ecl_int", "elec", "evac", "secu", "divers"] },
+    seafood: { label: "Sea Food",           color: "#8e44ad", items: ["clim", "froid", "cuisson", "hotte", "ecl_int", "ecl_ext", "elec", "plomb", "deck", "menuis", "divers"] },
+    bienetre:{ label: "Spa / fitness",      color: "#d4a017", items: ["clim", "ventil", "ecl_int", "elec", "plomb", "appareils", "menuis", "divers"] },
+    salle:   { label: "Salle polyvalente",  color: "#8e44ad", items: ["clim", "ecl_int", "ecl_ext", "elec", "sono", "menuis", "sanit", "divers"] },
+    admin:   { label: "Administration",     color: "#8e44ad", items: ["clim", "ecl_int", "elec", "reseau", "menuis", "sanit", "divers"] },
+    lingerie:{ label: "Lingerie / services généraux", color: "#5d6d7e", items: ["lavelinge", "sechelinge", "calandre", "pac", "ventil", "ecl_int", "elec", "plomb", "divers"] },
+    atelier: { label: "Atelier",            color: "#5d6d7e", items: ["ecl_int", "elec", "outillage", "rangement", "divers"] },
+    tgbt:    { label: "TGBT / groupe électrogène", color: "#5d6d7e", items: ["groupe", "gasoil", "tgbt", "condens", "ventil", "ecl_int", "divers"] },
+    piscine: { label: "Piscine",            color: "#1f7a8c", items: ["filtration", "traitement", "horloge", "ecl_bassin", "plomb", "local", "divers"] },
+    lagun:   { label: "Lagunarium / pomperie", color: "#1f7a8c", items: ["pompes", "canal", "sondes", "ventil", "ecl_int", "elec", "divers"] },
+    step:    { label: "Station d'épuration (STEP)", color: "#5d6d7e", items: ["pompes", "aerateur", "degrilleur", "alarme", "ecl_int", "elec", "divers"] },
+    wc:      { label: "WC publics",         color: "#7f8c8d", items: ["cuvettes", "lavabos", "sechemains", "ventil", "ecl_int", "portes", "divers"] },
+    ext:     { label: "Extérieurs",         color: "#2e7d32", items: ["ecl_allees", "bornes", "arrosage", "allees", "signal", "portail", "divers"] },
+    buand:   { label: "Buanderie d'étage",  color: "#5d6d7e", items: ["lavelinge", "sechelinge", "ecl_int", "elec", "plomb", "divers"] },
+    asc:     { label: "Ascenseur",          color: "#5d6d7e", items: ["ascenseur", "alarme", "ecl_int", "divers"] },
+    logt:    { label: "Logement du personnel", color: "#2e7d32", items: ["clim", "ecs", "ecl_int", "elec", "plomb", "cuisinette", "menuis", "divers"] },
+    lt:      { label: "Local technique",    color: "#5d6d7e", items: ["tableau", "ventil", "ecl_int", "acces", "divers"] }
   };
   var ITEMS = {
     clim:       { label: "Climatisation",              ic: "❄️", hint: "code erreur, condensation…" },
@@ -45,7 +70,60 @@
     plomb:      { label: "Plomberie / sanitaires",     ic: "🚿", hint: "lavabo, chasse d'eau, douche, EC/EF…" },
     fplafond:   { label: "Faux plafond / finitions",   ic: "🧱", hint: "" },
     deck:       { label: "Deck / terrasse",            ic: "🪵", hint: "nettoyage, fixation…" },
-    divers:     { label: "Autre point",                ic: "📝", hint: "coffre, mini-bar, porte, serrure…" }
+    divers:     { label: "Autre point",                ic: "📝", hint: "coffre, mini-bar, porte, serrure…" },
+    /* lieux communs */
+    elec:       { label: "Électricité (prises, tableau)", ic: "🔌", hint: "prise HS, disjoncteur qui saute…" },
+    ecran:      { label: "Écran / TV",                 ic: "📺", hint: "" },
+    sono:       { label: "Sono / écran / micro",       ic: "🔊", hint: "" },
+    reseau:     { label: "Réseau / wifi / imprimante", ic: "📶", hint: "" },
+    menuis:     { label: "Portes, serrures, vitrages", ic: "🚪", hint: "ferme-porte, gond, vitre…" },
+    mobilier:   { label: "Mobilier",                   ic: "🪑", hint: "" },
+    sanit:      { label: "Sanitaires",                 ic: "🚻", hint: "chasse, robinet, évacuation…" },
+    secu:       { label: "Sécurité (BAES, extincteurs, alarme)", ic: "🧯", hint: "" },
+    froid:      { label: "Froid (frigos, chambres froides)", ic: "🧊", hint: "température, givre, joint, compresseur…" },
+    congel:     { label: "Congélateurs",               ic: "🧊", hint: "température, alarme…" },
+    glacons:    { label: "Machine à glaçons",          ic: "🧊", hint: "" },
+    cuisson:    { label: "Cuisson (fours, plaques, friteuse)", ic: "🔥", hint: "" },
+    hotte:      { label: "Hotte / extraction",         ic: "🌬️", hint: "filtres, moteur, bruit…" },
+    lavevaisselle: { label: "Lave-vaisselle",          ic: "🍽️", hint: "" },
+    ecs:        { label: "Eau chaude (ballons)",       ic: "♨️", hint: "" },
+    evac:       { label: "Sols / évacuations / bac à graisse", ic: "🕳️", hint: "" },
+    ventil:     { label: "Ventilation / VMC",          ic: "🌬️", hint: "" },
+    appareils:  { label: "Appareils (fitness, cabines)", ic: "🏋️", hint: "" },
+    lavelinge:  { label: "Lave-linge",                 ic: "🫧", hint: "" },
+    sechelinge: { label: "Sèche-linge",                ic: "🫧", hint: "" },
+    calandre:   { label: "Calandreuse",                ic: "🫧", hint: "" },
+    outillage:  { label: "Outillage",                  ic: "🧰", hint: "" },
+    rangement:  { label: "Rangement / propreté",       ic: "🧹", hint: "" },
+    groupe:     { label: "Groupe électrogène (essai)", ic: "⚙️", hint: "démarrage, heures compteur…" },
+    gasoil:     { label: "Niveau gasoil",              ic: "⛽", hint: "" },
+    tgbt:       { label: "TGBT (disjoncteurs, voyants)", ic: "⚡", hint: "" },
+    condens:    { label: "Batterie de condensateurs",  ic: "⚡", hint: "" },
+    filtration: { label: "Filtration (pompe, filtre)", ic: "💧", hint: "pression, bruit, fuite…" },
+    traitement: { label: "Traitement de l'eau (chlore, pH)", ic: "🧪", hint: "" },
+    horloge:    { label: "Horloge de filtration",      ic: "⏰", hint: "plages horaires" },
+    ecl_bassin: { label: "Éclairage du bassin",        ic: "💡", hint: "" },
+    local:      { label: "Local technique",            ic: "🏚️", hint: "" },
+    pompes:     { label: "Pompes",                     ic: "💧", hint: "bruit, fuite, débit…" },
+    canal:      { label: "Canalisations / vannes",     ic: "🔧", hint: "" },
+    sondes:     { label: "Sondes / capteurs",          ic: "🌡️", hint: "" },
+    aerateur:   { label: "Aérateur / surpresseur",     ic: "🌬️", hint: "" },
+    degrilleur: { label: "Dégrilleur / prétraitement", ic: "🧹", hint: "" },
+    alarme:     { label: "Alarme / téléalarme",        ic: "🚨", hint: "" },
+    cuvettes:   { label: "Cuvettes / chasses d'eau",   ic: "🚽", hint: "" },
+    lavabos:    { label: "Lavabos / robinets",         ic: "🚰", hint: "" },
+    sechemains: { label: "Sèche-mains / distributeurs", ic: "🧴", hint: "" },
+    portes:     { label: "Portes / verrous",           ic: "🚪", hint: "" },
+    ecl_allees: { label: "Éclairage des allées",       ic: "🔦", hint: "" },
+    bornes:     { label: "Bornes / prises extérieures", ic: "🔌", hint: "" },
+    arrosage:   { label: "Arrosage",                   ic: "💦", hint: "" },
+    allees:     { label: "Allées / decks / passerelles", ic: "🪵", hint: "" },
+    signal:     { label: "Signalétique",               ic: "🪧", hint: "" },
+    portail:    { label: "Portail / accès / parking",  ic: "🚗", hint: "" },
+    ascenseur:  { label: "Ascenseur (fonctionnement)", ic: "🛗", hint: "" },
+    cuisinette: { label: "Cuisinette",                 ic: "🍳", hint: "" },
+    tableau:    { label: "Tableau électrique (TD)",    ic: "⚡", hint: "" },
+    acces:      { label: "Accès / propreté / fuites",  ic: "🧹", hint: "" }
   };
   var STATES = {
     ok:  { label: "OK",            short: "OK",  color: "#1a9d5a", bg: "#e6f6ec" },
@@ -60,10 +138,45 @@
   for (i = 1; i <= 4; i++)  KEYS.push({ id: "2" + pad(i), type: "foret",   grp: "Bungalows Forêt 201 – 204" });
   for (i = 1; i <= 22; i++) KEYS.push({ id: "3" + pad(i), type: "chambre", grp: "Chambres 301 – 322 (bâtiments N et O)" });
   for (i = 1; i <= 19; i++) KEYS.push({ id: "4" + pad(i), type: "lagune",  grp: "Bungalows Lagune 401 – 419" });
+  /* lieux communs : nom complet sur la tuile */
+  function place(id, type, name, grp) { KEYS.push({ id: id, type: type, grp: grp, name: name, wide: true }); }
+  var G1 = "Accueil, restaurant, bar", G2 = "Cuisine, Sea Food, bien-être", G3 = "Bâtiments techniques et personnel", G4 = "WC publics et extérieurs";
+  place("ACC",   "accueil",  "Accueil / réception",      G1);
+  place("REST",  "resto",    "Salle restaurant",         G1);
+  place("BAR",   "bar",      "Bar",                      G1);
+  place("SPOLY", "salle",    "Salle polyvalente",        G1);
+  place("ADM",   "admin",    "Administration / bureaux", G1);
+  place("CUIS",  "cuisine",  "Cuisine",                  G2);
+  place("SEAF",  "seafood",  "Sea Food",                 G2);
+  place("SPA",   "bienetre", "Spa",                      G2);
+  place("FIT",   "bienetre", "Salle de fitness",         G2);
+  place("PISC",  "piscine",  "Piscine + local technique", G2);
+  place("LING",  "lingerie", "Lingerie / services généraux", G3);
+  place("ATEL",  "atelier",  "Atelier",                  G3);
+  place("TGBT",  "tgbt",     "TGBT / groupe électrogène", G3);
+  place("LAGU",  "lagun",    "Lagunarium / pomperie",    G3);
+  place("STEP",  "step",     "Station d'épuration",      G3);
+  place("LT1",   "lt",       "Local technique LT1 (Lagune)", G3);
+  place("LT4",   "lt",       "Local technique LT4 (Plage / Forêt / chambres)", G3);
+  place("LT6",   "lt",       "Local technique LT6 (Lagune)", G3);
+  place("LT7",   "lt",       "Local technique LT7 (logements)", G3);
+  place("BU-N",  "buand",    "Buanderie d'étage N",      G3);
+  place("BU-O",  "buand",    "Buanderie d'étage O",      G3);
+  place("ASC-N", "asc",      "Ascenseur bâtiment N",     G3);
+  place("ASC-O", "asc",      "Ascenseur bâtiment O",     G3);
+  place("LOG-F1","logt",     "Logement F1",              G3);
+  place("LOG-F2","logt",     "Logement F2",              G3);
+  place("LOG-F4","logt",     "Logement F4",              G3);
+  place("WC-ACC","wc",       "WC accueil",               G4);
+  place("WC-REST","wc",      "WC restaurant",            G4);
+  place("WC-PL", "wc",       "WC plage / piscine",       G4);
+  place("WC-SP", "wc",       "WC salle polyvalente",     G4);
+  place("EXT",   "ext",      "Allées, éclairage extérieur, arrosage", G4);
+  place("PARK",  "ext",      "Entrée, portail, parking", G4);
   var GROUPS = [];
   KEYS.forEach(function (k) { if (GROUPS.indexOf(k.grp) < 0) GROUPS.push(k.grp); });
   function keyInfo(id) { return KEYS.filter(function (k) { return k.id === id; })[0] || null; }
-  function keyLabel(id) { var k = keyInfo(id); return k ? (TYPES[k.type].label + " " + id) : ("Clé " + id); }
+  function keyLabel(id) { var k = keyInfo(id); if (!k) return "Lieu " + id; return k.name ? k.name : (TYPES[k.type].label + " " + id); }
   function keyType(id) { var k = keyInfo(id); return k ? TYPES[k.type] : TYPES.chambre; }
   var TECHS = ["JC ALIKIE", "François YANTAO"];
 
@@ -156,28 +269,28 @@
 
     var html = '<div style="border-radius:16px;overflow:hidden;margin-bottom:12px;padding:16px;color:#fff;' +
       'background:linear-gradient(135deg,#1f7a8c,#155e6b 60%,#0c3f48);box-shadow:0 2px 10px rgba(20,30,40,.18)">' +
-      '<div style="font-size:19px;font-weight:800">🏠 Chambres &amp; bungalows — état et travaux</div>' +
-      '<div style="font-size:12.5px;opacity:.92;margin-top:3px">Une clé = un écran. Coche OK / ⚠ / HS, note les travaux, coche quand c\'est fait.' +
+      '<div style="font-size:19px;font-weight:800">🛠️ Maintenance — interventions &amp; pannes</div>' +
+      '<div style="font-size:12.5px;opacity:.92;margin-top:3px">Un lieu = un écran : chambres, bungalows et tous les bâtiments. Coche OK / ⚠ / HS, note les travaux, coche quand c\'est fait.' +
       (lastDate ? " Dernier passage : " + frDate(lastDate) : "") + '</div>' +
       '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap">' +
       stat(nHs, "points HS", "#ffb3a7") + stat(nAtt, "à surveiller", "#ffd9a8") + stat(nTodo, "travaux à faire", "#fff") +
-      stat(Object.keys(nKeysPb).length + " / " + KEYS.length, "clés avec un point", "#fff") +
+      stat(Object.keys(nKeysPb).length + " / " + KEYS.length, "lieux avec un point", "#fff") +
       '</div></div>';
 
     html += '<button class="btn primary" id="hTodo" style="background:#c0392b">📋 Tout ce qu\'il reste à faire (' + iss.length + ')</button>';
 
     html += '<div class="panel" style="margin-top:12px"><h2>Rechercher</h2>' +
-      '<input type="text" id="hSearch" placeholder="N° de clé, clim, décodeur, douche…" value="' + esc(V.q) + '" ' +
+      '<input type="text" id="hSearch" placeholder="N° de clé, lieu, clim, décodeur, douche…" value="' + esc(V.q) + '" ' +
       'style="width:100%;border:1.4px solid #d6dbde;border-radius:9px;padding:9px 10px;background:#fafbfb"></div>';
 
     html += '<div id="hGrid"></div>';
 
     html += '<div class="panel"><h2>Légende</h2><div class="small" style="display:flex;gap:8px;flex-wrap:wrap">' +
-      chip("ok", "OK : tout fonctionne") + chip("att", "⚠ : point à surveiller ou travaux en attente") + chip("hs", "HS : au moins un équipement en panne") + chip("na", "? : clé non visitée") +
+      chip("ok", "OK : tout fonctionne") + chip("att", "⚠ : point à surveiller ou travaux en attente") + chip("hs", "HS : au moins un équipement en panne") + chip("na", "? : lieu non visité") +
       '</div></div>';
 
     html += '<div class="panel"><h2>Export</h2>' +
-      '<button class="btn sec" id="hExp">⬇️ État des clés + travaux + historique (xlsx)</button></div>';
+      '<button class="btn sec" id="hExp">⬇️ État des lieux + travaux + historique (xlsx)</button></div>';
 
     $("app").innerHTML = html;
     $("hTodo").onclick = function () { V.screen = "todo"; render(); };
@@ -205,14 +318,18 @@
       var ks = KEYS.filter(function (k) { return k.grp === g && matchKey(k.id, q); });
       if (!ks.length) return;
       var t = TYPES[ks[0].type];
+      var wide = !!ks[0].wide;
       h += '<div class="panel" style="padding:12px 12px 8px"><h2 style="color:' + t.color + '">' + esc(g) + '</h2>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:7px">';
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(' + (wide ? "150px" : "62px") + ',1fr));gap:7px">';
       ks.forEach(function (k) {
         var st = keyStatus(k.id), s = STATES[st], n = issues(k.id).length;
-        h += '<div class="hk" data-k="' + k.id + '" style="border-radius:10px;padding:9px 4px;text-align:center;cursor:pointer;background:' + s.bg +
+        var lab = (st === "na" ? "non visité" : (n ? n + " point" + (n > 1 ? "s" : "") : "OK"));
+        h += '<div class="hk" data-k="' + k.id + '" style="border-radius:10px;padding:9px ' + (wide ? "8px" : "4px") + ';text-align:' + (wide ? "left" : "center") + ';cursor:pointer;background:' + s.bg +
           ';border:1.6px solid ' + s.color + ';color:' + s.color + '">' +
-          '<div style="font-size:17px;font-weight:800;color:#1a2025">' + k.id + '</div>' +
-          '<div style="font-size:10.5px;font-weight:800">' + (st === "na" ? "non visité" : (n ? n + " point" + (n > 1 ? "s" : "") : "OK")) + '</div></div>';
+          (wide ? '<div style="font-size:13.5px;font-weight:800;color:#1a2025;line-height:1.2">' + esc(k.name) + '</div>' +
+                  '<div style="font-size:10.5px;font-weight:800;margin-top:2px">' + lab + '</div>'
+                : '<div style="font-size:17px;font-weight:800;color:#1a2025">' + k.id + '</div>' +
+                  '<div style="font-size:10.5px;font-weight:800">' + lab + '</div>') + '</div>';
       });
       h += '</div></div>';
     });
@@ -227,7 +344,7 @@
   function renderTodo() {
     var iss = allIssues();
     var html = '<div class="panel"><h2>📋 Tout ce qu\'il reste à faire</h2>' +
-      '<div class="tiny muted">Regroupé par clé. Touche une ligne pour la régler (réparé / fait) ou ouvrir la clé.</div>' +
+      '<div class="tiny muted">Regroupé par lieu. Touche une ligne pour la régler (réparé / fait) ou ouvrir le lieu.</div>' +
       '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' +
       fbtn("all", "Tout (" + iss.length + ")") + fbtn("hs", "HS (" + iss.filter(function (x) { return x.st === "hs"; }).length + ")") +
       fbtn("att", "⚠ (" + iss.filter(function (x) { return x.st === "att"; }).length + ")") +
@@ -292,7 +409,7 @@
           touch("hebg:" + k); after();
         });
       } },
-      { label: "🏠 Ouvrir la clé " + k, cb: function () { V.screen = "key"; V.id = k; render(); } }
+      { label: "🏠 Ouvrir " + keyLabel(k), cb: function () { V.screen = "key"; V.id = k; render(); } }
     ]);
   }
   function resolveTodo(k, tid, after) {
@@ -316,7 +433,7 @@
           touch("hebg:" + k); after();
         });
       } },
-      { label: "🏠 Ouvrir la clé " + k, cb: function () { V.screen = "key"; V.id = k; render(); } }
+      { label: "🏠 Ouvrir " + keyLabel(k), cb: function () { V.screen = "key"; V.id = k; render(); } }
     ]);
   }
 
@@ -328,9 +445,9 @@
     var ph = photosFor("hebg_" + id);
     var html = '<div style="border-radius:16px;padding:14px 16px;margin-bottom:12px;color:#fff;background:linear-gradient(135deg,' + t.color + ',#1a2025 140%)">' +
       '<div style="display:flex;align-items:center;gap:10px">' +
-      '<div style="font-size:30px;font-weight:800">' + id + '</div>' +
-      '<div style="flex:1"><div style="font-size:15px;font-weight:800">' + esc(t.label) + '</div>' +
-      '<div style="font-size:12px;opacity:.9">' + (r.date ? "Dernier passage : " + frDate(r.date) + (r.by ? " · " + esc(r.by) : "") : "Jamais visitée") + '</div></div>' +
+      '<div style="font-size:' + (k.wide ? "22px" : "30px") + ';font-weight:800">' + (k.wide ? "🏢" : id) + '</div>' +
+      '<div style="flex:1"><div style="font-size:15px;font-weight:800">' + esc(k.wide ? k.name : t.label) + '</div>' +
+      '<div style="font-size:12px;opacity:.9">' + (r.date ? "Dernier passage : " + frDate(r.date) + (r.by ? " · " + esc(r.by) : "") : "Jamais visité") + '</div></div>' +
       '<span style="background:' + s.color + ';color:#fff;border-radius:8px;padding:3px 9px;font-weight:800;font-size:12px">' + esc(st === "na" ? "?" : s.label) + '</span>' +
       '</div></div>';
 
@@ -356,7 +473,7 @@
     /* travaux à faire */
     var open = openTodos(r), done = r.todos.filter(function (x) { return x.done; });
     html += '<div class="panel" style="padding:12px"><h2>Travaux à faire (' + open.length + ')</h2>';
-    if (!open.length) html += '<div class="tiny muted">Rien en attente sur cette clé.</div>';
+    if (!open.length) html += '<div class="tiny muted">Rien en attente ici.</div>';
     open.forEach(function (td) {
       html += '<div class="row-item hTd" data-tid="' + td.id + '" style="padding:9px 10px;margin-bottom:6px">' +
         '<div class="row-icon" style="background:#5c6bc0">🔧</div>' +
@@ -371,13 +488,12 @@
     html += '</div>';
 
     /* observations + photos */
-    html += '<div class="panel"><label class="fld"><span>Observations sur la clé</span>' +
+    html += '<div class="panel"><label class="fld"><span>Observations</span>' +
       '<textarea id="hObs" placeholder="remarques générales, à surveiller…">' + esc(r.obs || "") + '</textarea></label>' +
       '<h2>📷 Photos (' + ph.length + ')</h2><div class="photos" id="hPh"></div></div>';
 
     html += '<button class="btn primary" id="hSave" style="background:' + t.color + '">💾 Enregistrer le passage (' + frDate(nowDate()) + ')</button>';
-    if (window.MAINT && MAINT.openForKey) html += '<button class="btn sec" id="hInter" style="margin-top:9px">🛠️ Créer une fiche d\'intervention détaillée</button>';
-    html += '<button class="btn sec" id="hHist" style="margin-top:9px">🕘 Historique de la clé (' + (r.hist || []).length + ')</button>' +
+    html += '<button class="btn sec" id="hHist" style="margin-top:9px">🕘 Historique (' + (r.hist || []).length + ')</button>' +
       '<div id="hHistBox" style="display:' + (V.showHist ? "block" : "none") + '"></div>';
 
     $("app").innerHTML = html;
@@ -414,7 +530,7 @@
       });
     });
     $("hAllOk").onclick = function () {
-      sheetConfirm("Tout marquer OK ?", "Tous les points de la clé " + id + " passent en OK (les travaux à faire restent).", "Tout OK", false, function () {
+      sheetConfirm("Tout marquer OK ?", "Tous les points de « " + keyLabel(id) + " » passent en OK (les travaux à faire restent).", "Tout OK", false, function () {
         t.items.forEach(function (key) {
           var it = r.items[key] || {};
           if (it.st && it.st !== "ok" && it.st !== "na") pushHist(r, ITEMS[key].label + " : " + STATES[it.st].label + " → OK", who());
@@ -439,11 +555,10 @@
         var nPb = issues(id).length;
         pushHist(r, "Passage enregistré — " + (nPb ? nPb + " point(s) en attente" : "tout OK"), n);
         touch("hebg:" + id);
-        toast("💾 Clé " + id + " enregistrée" + (nPb ? " — " + nPb + " point(s) à suivre" : " — tout OK"));
+        toast("💾 " + keyLabel(id) + " : passage enregistré" + (nPb ? " — " + nPb + " point(s) à suivre" : " — tout OK"));
         V.screen = "grid"; render();
       });
     };
-    if ($("hInter")) $("hInter").onclick = function () { MAINT.openForKey(id, keyLabel(id)); };
     $("hHist").onclick = function () { V.showHist = !V.showHist; $("hHistBox").style.display = V.showHist ? "block" : "none"; };
   }
   function seg(key, st, cur) {
@@ -475,12 +590,12 @@
   /* -------------------- EXPORT xlsx -------------------- */
   function exportXlsx() {
     var wb = XLSX.utils.book_new();
-    var allItems = ["clim", "clim_salon", "clim_ch", "pac", "tv", "tv_salon", "tv_ch", "wifi", "spa", "brasseur", "ecl_int", "ecl_ext", "plomb", "fplafond", "deck", "divers"];
-    var aoa = [["ÉTAT DES CHAMBRES & BUNGALOWS — HÔTEL WADRA BAY"], ["Généré le", nowDate() + " " + nowTime()], [],
-      ["Clé", "Type", "État global", "Dernier passage", "Par", "Travaux en attente"].concat(allItems.map(function (k) { return ITEMS[k].label; })).concat(["Observations"])];
+    var allItems = Object.keys(ITEMS);
+    var aoa = [["ÉTAT DES LIEUX — MAINTENANCE — HÔTEL WADRA BAY"], ["Généré le", nowDate() + " " + nowTime()], [],
+      ["Lieu", "Nom", "État global", "Dernier passage", "Par", "Travaux en attente"].concat(allItems.map(function (k) { return ITEMS[k].label; })).concat(["Observations"])];
     KEYS.forEach(function (k) {
       var r = rec(k.id) || { items: {}, todos: [] }, st = keyStatus(k.id);
-      var row = [k.id, TYPES[k.type].label, st === "na" ? "non visitée" : STATES[st].label, r.date ? frDate(r.date) : "", r.by || "", openTodos(r).length];
+      var row = [k.id, keyLabel(k.id), st === "na" ? "non visité" : STATES[st].label, r.date ? frDate(r.date) : "", r.by || "", openTodos(r).length];
       allItems.forEach(function (key) {
         if (TYPES[k.type].items.indexOf(key) < 0) { row.push(""); return; }
         var it = r.items[key];
@@ -491,17 +606,17 @@
     });
     var ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = aoa[3].map(function (h, i) { return { wch: i < 6 ? 12 : 22 }; });
-    XLSX.utils.book_append_sheet(wb, ws, "État des clés");
+    XLSX.utils.book_append_sheet(wb, ws, "État des lieux");
 
-    var aoa2 = [["TRAVAUX ET POINTS EN ATTENTE"], [], ["Clé", "Type", "Nature", "Point / travaux", "État", "Depuis le"]];
+    var aoa2 = [["TRAVAUX ET POINTS EN ATTENTE"], [], ["Lieu", "Nom", "Nature", "Point / travaux", "État", "Depuis le"]];
     allIssues().forEach(function (x) {
-      aoa2.push([x.key, keyType(x.key).label, x.kind === "todo" ? "Travaux" : "Équipement", x.txt, x.kind === "todo" ? "à faire" : STATES[x.st].label, frDate(x.date)]);
+      aoa2.push([x.key, keyLabel(x.key), x.kind === "todo" ? "Travaux" : "Équipement", x.txt, x.kind === "todo" ? "à faire" : STATES[x.st].label, frDate(x.date)]);
     });
     var ws2 = XLSX.utils.aoa_to_sheet(aoa2);
-    ws2["!cols"] = [{ wch: 7 }, { wch: 16 }, { wch: 11 }, { wch: 60 }, { wch: 13 }, { wch: 12 }];
+    ws2["!cols"] = [{ wch: 8 }, { wch: 26 }, { wch: 11 }, { wch: 60 }, { wch: 13 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, ws2, "À faire");
 
-    var aoa3 = [["HISTORIQUE"], [], ["Date", "Heure", "Clé", "Par", "Événement"]], ev = [];
+    var aoa3 = [["HISTORIQUE"], [], ["Date", "Heure", "Lieu", "Par", "Événement"]], ev = [];
     KEYS.forEach(function (k) {
       var r = rec(k.id); if (!r) return;
       (r.hist || []).forEach(function (x) { ev.push([x.date, x.heure || "", k.id, x.by || "", x.txt]); });
@@ -512,7 +627,7 @@
     var ws3 = XLSX.utils.aoa_to_sheet(aoa3);
     ws3["!cols"] = [{ wch: 11 }, { wch: 6 }, { wch: 6 }, { wch: 16 }, { wch: 70 }];
     XLSX.utils.book_append_sheet(wb, ws3, "Historique");
-    XLSX.writeFile(wb, "WADRA_Bay_Etat_Chambres_" + nowDate() + ".xlsx");
+    XLSX.writeFile(wb, "WADRA_Bay_Maintenance_Etat_des_lieux_" + nowDate() + ".xlsx");
     toast("Export téléchargé");
   }
 
