@@ -359,6 +359,7 @@ async function processPhotoFiles(files){
   renderStripKind(photoTargetKey, true);
   renderStripKind(photoTargetKey, false);
   if(window.MAINT && MAINT.photoAdded) try { MAINT.photoAdded(photoTargetKey); } catch(e) {}
+  if(window.HEBG && HEBG.photoAdded) try { HEBG.photoAdded(photoTargetKey); } catch(e) {}
   toast('Photo(s) enregistrée(s)');
   touch('photo');
 }
@@ -375,6 +376,7 @@ async function deletePhoto(id){
   renderStripKind(p.key, true);
   renderStripKind(p.key, false);
   if(window.MAINT && MAINT.photoAdded) try { MAINT.photoAdded(p.key); } catch(e) {}
+  if(window.HEBG && HEBG.photoAdded) try { HEBG.photoAdded(p.key); } catch(e) {}
   scheduleSave();
 }
 
@@ -434,6 +436,7 @@ $('vMove').onclick = async () => {
   renderStripKind(p.key, true);
   renderStripKind(p.key, false);
   if(window.MAINT && MAINT.photoAdded) try { MAINT.photoAdded(p.key); } catch(e) {}
+  if(window.HEBG && HEBG.photoAdded) try { HEBG.photoAdded(p.key); } catch(e) {}
   const isInter = String(p.key).indexOf('it_') === 0;
   toast(p.plate ? (isInter ? 'Photo reclassée « Après »' : 'Photo reclassée « Plaque »')
                 : (isInter ? 'Photo reclassée « Avant »' : 'Photo reclassée « Équipement »'));
@@ -813,6 +816,10 @@ function renderHeader(){
     h.innerHTML = '<button class="hbtn" id="goWelL">' + IC.back + '</button>' +
       '<div class="htitle">Éclairement — Luxmètre</div>';
     $('goWelL').onclick = () => { if(window.LUX && LUX.back && LUX.back()) return; nav('welcome'); };
+  } else if(view.name === 'hebg'){
+    h.innerHTML = '<button class="hbtn" id="goWelH">' + IC.back + '</button>' +
+      '<div class="htitle">Chambres &amp; bungalows — État et travaux</div>';
+    $('goWelH').onclick = () => { if(window.HEBG && HEBG.back && HEBG.back()) return; nav('welcome'); };
   } else if(view.name === 'maint'){
     h.innerHTML = '<button class="hbtn" id="goWelI">' + IC.back + '</button>' +
       '<div class="htitle">Maintenance — Interventions</div>';
@@ -1490,6 +1497,22 @@ function renderWelcome(){
     '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
     '</div>';
 
+  /* carte 2c : chambres & bungalows (état, travaux) */
+  const hc = (window.HEBG && HEBG.counts) ? HEBG.counts() : {hs:0, att:0, todo:0, total:0};
+  const hLast = (window.HEBG && HEBG.lastDate) ? HEBG.lastDate() : null;
+  html += '<div id="welHebg" style="border-radius:16px;padding:15px 16px;margin-bottom:13px;color:#fff;cursor:pointer;' +
+    'background:linear-gradient(135deg,#1f7a8c,#0c3f48);box-shadow:0 2px 8px rgba(31,122,140,.3)">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+    '<div style="font-size:30px">🏠</div>' +
+    '<div style="flex:1;min-width:0">' +
+    '<div style="font-size:16.5px;font-weight:800">Chambres &amp; bungalows — état et travaux' +
+    (hc.total ? ' <span style="background:#fff;color:#1f7a8c;border-radius:9px;padding:1px 8px;font-size:12.5px;vertical-align:2px">' + hc.total + '</span>' : '') + '</div>' +
+    '<div style="font-size:12.5px;opacity:.92;margin-top:2px">' +
+    (hc.total ? (hc.hs + ' HS · ' + hc.att + ' à surveiller · ' + hc.todo + ' travaux' + (hLast ? ' · dern. passage : ' + hLast : ''))
+              : '50 clés · points à vérifier · travaux à faire · historique') + '</div>' +
+    '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
+    '</div>';
+
   /* carte 3 : maintenance */
   const nInt = (window.MAINT && MAINT.count) ? MAINT.count() : 0;
   const nOpen = (window.MAINT && MAINT.openCount) ? MAINT.openCount() : 0;
@@ -1526,6 +1549,7 @@ function renderWelcome(){
   $('welMes').onclick = () => nav('mesures');
   $('welLux').onclick = () => nav('lux');
   $('welMaint').onclick = () => nav('maint');
+  $('welHebg').onclick = () => nav('hebg');
 }
 
 /* ====================== NAVIGATION ====================== */
@@ -1542,6 +1566,10 @@ function nav(name){
   else if(name === 'lux'){
     if(window.LUX) LUX.render();
     else $('app').innerHTML = '<div class="panel"><b>Module éclairement en cours de chargement…</b><div class="tiny muted" style="margin-top:5px">Revenez à l\'accueil et réessayez dans quelques secondes.</div></div>';
+  }
+  else if(name === 'hebg'){
+    if(window.HEBG) HEBG.render();
+    else $('app').innerHTML = '<div class="panel"><b>Module chambres en cours de chargement…</b></div>';
   }
   else if(name === 'maint'){
     if(window.MAINT) MAINT.render();
@@ -1646,6 +1674,9 @@ async function boot(){
   state.inter = state.inter || {};
   // Éclairement luxmètre (module lux.js)
   state.lux = state.lux || {};
+  // Chambres & bungalows (module hebergements.js) — point de départ : rapport JC ALIKIE du 22/03/2026
+  state.hebg = state.hebg || {};
+  if(window.HEBG && HEBG.seed) try { HEBG.seed(); } catch(e) {}
 
   nav('welcome');
 
@@ -1664,6 +1695,8 @@ boot().then(() => { window.__APP_READY = true; });
 <script src="./mesures.js"></script>
 <script src="./lux.js"></script>
 <script src="./maintenance.js"></script>
+<script src="./seed_hebg.js"></script>
+<script src="./hebergements.js"></script>
 <script src="./sync.js"></script>
 </body>
 </html>
