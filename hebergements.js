@@ -13,6 +13,12 @@
      ascenseurs, logements du personnel, locaux techniques) ;
    - point de départ : le rapport de JC ALIKIE du 22 mars 2026 (seed) ;
    - « À faire » global regroupé par clé, export xlsx (état, travaux, historique) ;
+   - passerelle avec l'inventaire (data.js / arbre TREE) : chaque lieu est
+     relié aux pièces de l'inventaire qui s'y trouvent ; l'écran du lieu
+     liste les équipements recensés (marque, modèle, état de maintenance)
+     et permet d'ouvrir une intervention dessus ; l'inventaire renvoie
+     vers le lieu (liens par défaut + liens ajoutés par le technicien,
+     champs rooms / roomsOff du lieu, synchronisés) ;
    - stockage local (state.hebg) + synchro Supabase (type "hebg", id "hebg:101").
    Dépend des globales de index.html : state, $, esc, toast, touch, nav,
    view, photosFor, triggerPhoto, openViewer, openSheet, closeSheet,
@@ -41,11 +47,13 @@
     bienetre:{ label: "Spa / fitness",      color: "#d4a017", items: ["clim", "ventil", "ecl_int", "elec", "plomb", "appareils", "menuis", "divers"] },
     salle:   { label: "Salle polyvalente",  color: "#8e44ad", items: ["clim", "ecl_int", "ecl_ext", "elec", "sono", "menuis", "sanit", "divers"] },
     admin:   { label: "Administration",     color: "#8e44ad", items: ["clim", "ecl_int", "elec", "reseau", "menuis", "sanit", "divers"] },
-    lingerie:{ label: "Lingerie / services généraux", color: "#5d6d7e", items: ["lavelinge", "sechelinge", "calandre", "pac", "ventil", "ecl_int", "elec", "plomb", "divers"] },
+    lingerie:{ label: "Lingerie / laverie", color: "#5d6d7e", items: ["lavelinge", "sechelinge", "calandre", "pac", "ventil", "ecl_int", "elec", "plomb", "divers"] },
     atelier: { label: "Atelier",            color: "#5d6d7e", items: ["ecl_int", "elec", "outillage", "rangement", "divers"] },
     tgbt:    { label: "TGBT / groupe électrogène", color: "#5d6d7e", items: ["groupe", "gasoil", "tgbt", "condens", "ventil", "ecl_int", "divers"] },
     piscine: { label: "Piscine",            color: "#1f7a8c", items: ["filtration", "traitement", "horloge", "ecl_bassin", "plomb", "local", "divers"] },
-    lagun:   { label: "Lagunarium / pomperie", color: "#1f7a8c", items: ["pompes", "canal", "sondes", "ventil", "ecl_int", "elec", "divers"] },
+    lagun:   { label: "Lagunarium",         color: "#1f7a8c", items: ["pompes", "canal", "sondes", "ventil", "ecl_int", "elec", "divers"] },
+    pomp:    { label: "Pomperie / défense incendie", color: "#1f7a8c", items: ["pompes", "tableau", "alarme", "plomb", "ecl_int", "divers"] },
+    sg:      { label: "Services généraux",  color: "#5d6d7e", items: ["clim", "ventil", "sanit", "sechemains", "ecl_int", "ecl_ext", "elec", "divers"] },
     step:    { label: "Station d'épuration (STEP)", color: "#5d6d7e", items: ["pompes", "aerateur", "degrilleur", "alarme", "ecl_int", "elec", "divers"] },
     wc:      { label: "WC publics",         color: "#7f8c8d", items: ["cuvettes", "lavabos", "sechemains", "ventil", "ecl_int", "portes", "divers"] },
     ext:     { label: "Extérieurs",         color: "#2e7d32", items: ["ecl_allees", "bornes", "arrosage", "allees", "signal", "portail", "divers"] },
@@ -151,10 +159,12 @@
   place("SPA",   "bienetre", "Spa",                      G2);
   place("FIT",   "bienetre", "Salle de fitness",         G2);
   place("PISC",  "piscine",  "Piscine + local technique", G2);
-  place("LING",  "lingerie", "Lingerie / services généraux", G3);
+  place("LING",  "lingerie", "Lingerie / laverie",       G3);
+  place("SG",    "sg",       "Services généraux bât. I (bureau gouvernante, vestiaires)", G3);
   place("ATEL",  "atelier",  "Atelier",                  G3);
   place("TGBT",  "tgbt",     "TGBT / groupe électrogène", G3);
-  place("LAGU",  "lagun",    "Lagunarium / pomperie",    G3);
+  place("LAGU",  "lagun",    "Lagunarium",               G3);
+  place("POMP",  "pomp",     "Pomperie / défense incendie", G3);
   place("STEP",  "step",     "Station d'épuration",      G3);
   place("LT1",   "lt",       "Local technique LT1 (Lagune)", G3);
   place("LT4",   "lt",       "Local technique LT4 (Plage / Forêt / chambres)", G3);
@@ -173,6 +183,58 @@
   place("WC-SP", "wc",       "WC salle polyvalente",     G4);
   place("EXT",   "ext",      "Allées, éclairage extérieur, arrosage", G4);
   place("PARK",  "ext",      "Entrée, portail, parking", G4);
+  /* ---- passerelle inventaire : pièces de l'inventaire (data.js) présentes dans chaque lieu ---- */
+  var INV_BY_TYPE = {
+    plage:   ["z_lt4_r8", "z_lt4_r9", "z_lt4_r10", "z_lt4_r11"],
+    foret:   ["z_lt4_r21", "z_lt4_r22", "z_lt4_r23", "z_lt4_r24"],
+    chambre: ["z_lt4_r16", "z_lt4_r17", "z_lt4_r18", "z_lt4_r20"],
+    lagune:  ["z_lt1_r22", "z_lt1_r23", "z_lt1_r24", "z_lt1_r25"]
+  };
+  var INV_BY_ID = {
+    ACC: ["z_c_r2"], REST: ["z_c_r20"], BAR: ["z_c_r19"], SPOLY: ["z_sp_r1", "z_sp_r4", "z_sp_r5"], ADM: ["z_c_r3", "z_c_r4", "z_c_r5"],
+    CUIS: ["z_c_r11", "z_c_r17", "z_c_r12", "z_c_r13", "z_c_r16", "z_c_r18", "z_c_r14", "z_c_r15", "z_c_r6", "z_c_r9", "z_c_r10", "z_c_r7", "z_c_r8"],
+    SEAF: ["z_lt1_r15", "z_lt1_r12", "z_lt1_r13", "z_lt1_r14"], SPA: ["z_lt1_r17", "z_lt1_r16", "z_lt1_r19", "z_lt1_r18"], FIT: ["z_lt1_r20", "z_lt1_r19", "z_lt1_r18"],
+    PISC: ["z_c_r1"], LING: ["z_sg_r4", "z_sg_r7", "z_sg_r6", "z_sg_r5", "z_sg_r8", "z_lt1_r26", "z_lt1_r11", "z_lt6_r6"],
+    SG: ["z_sg_r2", "z_sg_r1", "z_sg_r3", "z_sg_r9", "z_sg_r10", "z_sg_r11", "z_sg_r12"],
+    ATEL: ["z_atelier_r1"], TGBT: ["z_tgbt_r4", "z_tgbt_r1", "z_tgbt_r3", "z_tgbt_r2"], LAGU: ["z_sp_r2", "z_sp_r3"],
+    POMP: ["z_pomperie_r3", "z_pomperie_r1", "z_pomperie_r2"], STEP: ["z_step_r5", "z_step_r1", "z_step_r2", "z_step_r4", "z_step_r3"],
+    LT1: ["z_lt1_r21", "z_lt1_r1", "z_lt1_r6"], LT4: ["z_lt4_r12", "z_lt4_r7"], LT6: ["z_lt6_r1"], LT7: ["z_lt7_r4"],
+    "BU-N": ["z_lt4_r13"], "BU-O": ["z_lt4_r14"], "ASC-N": ["z_lt4_r15"], "ASC-O": ["z_lt4_r15"],
+    "LOG-F1": ["z_lt7_r2", "z_lt7_r3", "z_lt7_r1"], "LOG-F2": ["z_lt7_r2", "z_lt7_r3", "z_lt7_r1"], "LOG-F4": ["z_lt7_r2", "z_lt7_r3", "z_lt7_r1"],
+    "WC-ACC": ["z_c_r21"], "WC-REST": ["z_c_r21"], "WC-PL": [], "WC-SP": ["z_sp_r8", "z_sp_r6", "z_sp_r7", "z_sp_r9"],
+    EXT: ["z_c_r26", "z_c_r25", "z_c_r23"], PARK: ["z_c_r22", "z_c_r24"]
+  };
+  function defaultRooms(id) { var k = keyInfo(id); if (!k) return []; return (INV_BY_ID[id] || (k.type ? INV_BY_TYPE[k.type] : null) || []).slice(); }
+  function roomsFor(id) { /* liens par défaut + liens ajoutés − liens retirés */
+    var r = rec(id) || {}, out = [], off = r.roomsOff || [];
+    defaultRooms(id).concat(r.rooms || []).forEach(function (rid) { if (out.indexOf(rid) < 0 && off.indexOf(rid) < 0) out.push(rid); });
+    return out;
+  }
+  function treeRooms() { /* toutes les pièces de l'inventaire (arbre effectif) */
+    try { if (typeof rebuildTree === "function") rebuildTree(); } catch (e) {}
+    var out = [], idx = {};
+    var T = (typeof TREE !== "undefined" && TREE) ? TREE : (window.TREE || []);
+    T.forEach(function (z) { z.rooms.forEach(function (rm) { var o = { id: rm.id, name: rm.name, zone: z.name, zoneId: z.id, equipment: rm.equipment }; out.push(o); idx[rm.id] = o; }); });
+    return { list: out, idx: idx };
+  }
+  function invRooms(id) { var tr = treeRooms(); return roomsFor(id).map(function (rid) { return tr.idx[rid]; }).filter(function (x) { return !!x; }); }
+  function invEquipIds(id) { var ids = []; invRooms(id).forEach(function (rm) { rm.equipment.forEach(function (e) { ids.push(e.id); }); }); return ids; }
+  function placesForRoom(rid) { /* lieux de maintenance auxquels une pièce de l'inventaire est rattachée */
+    var out = [], typesDone = {};
+    KEYS.forEach(function (k) {
+      if (roomsFor(k.id).indexOf(rid) < 0) return;
+      var r = rec(k.id) || {};
+      var byType = !k.wide && !INV_BY_ID[k.id] && (r.rooms || []).indexOf(rid) < 0 && (INV_BY_TYPE[k.type] || []).indexOf(rid) >= 0;
+      if (byType) { if (!typesDone[k.type]) { typesDone[k.type] = 1; out.push({ id: null, type: k.type, label: k.grp }); } }
+      else out.push({ id: k.id, label: keyLabel(k.id) });
+    });
+    return out;
+  }
+  function interFor(id) { /* interventions du lieu : rattachées au lieu, ou à un de ses équipements recensés */
+    if (!window.MAINT || !MAINT.all) return [];
+    var eq = invEquipIds(id);
+    return MAINT.all().filter(function (r) { return r.hebg === id || (r.equip && eq.indexOf(r.equip) >= 0); });
+  }
   var GROUPS = [];
   KEYS.forEach(function (k) { if (GROUPS.indexOf(k.grp) < 0) GROUPS.push(k.grp); });
   function keyInfo(id) { return KEYS.filter(function (k) { return k.id === id; })[0] || null; }
@@ -249,7 +311,7 @@
   /* -------------------- état interne -------------------- */
   var V = { screen: "grid", id: null, q: "", showHist: false, filter: "all" };
   function back() {
-    if (V.screen === "key") { V.screen = "grid"; V.id = null; render(); return true; }
+    if (V.screen === "key") { V.screen = "grid"; V.id = null; V.showEq = false; render(); return true; }
     if (V.screen === "todo") { V.screen = "grid"; render(); return true; }
     return false;
   }
@@ -470,6 +532,52 @@
     });
     html += '</div>';
 
+    /* équipements de l'inventaire présents dans ce lieu */
+    var rooms = invRooms(id), nEq = 0;
+    rooms.forEach(function (rm) { nEq += rm.equipment.length; });
+    var showAll = V.showEq || nEq <= 14;
+    html += '<div class="panel" style="padding:12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+      '<h2 style="margin:0;flex:1">📋 Équipements recensés (' + nEq + ')</h2>' +
+      '<button class="btn sec" id="hLinkRoom" style="width:auto;padding:6px 10px;margin:0;font-size:12px">🔗 Lier une pièce</button></div>' +
+      '<div class="tiny muted" style="margin-bottom:6px">Inventaire électrique de l\'hôtel : touche un équipement pour sa fiche, 🔧 pour une intervention.</div>';
+    if (!rooms.length) html += '<div class="tiny muted">Aucune pièce de l\'inventaire n\'est reliée à ce lieu — « Lier une pièce » pour choisir.</div>';
+    if (showAll) rooms.forEach(function (rm) {
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:6px;border-top:1px solid #eef1f2">' +
+        '<div style="flex:1;font-size:11.5px;font-weight:800;color:#6b7785;text-transform:uppercase;letter-spacing:.03em">' + esc(rm.zone) + ' · ' + esc(rm.name) + '</div>' +
+        '<button class="hRoomAct" data-rid="' + esc(rm.id) + '" style="border:0;background:transparent;color:#8895a3;font-size:16px;padding:0 4px">⋯</button></div>';
+      if (!rm.equipment.length) html += '<div class="tiny muted">Pièce vide dans l\'inventaire.</div>';
+      rm.equipment.forEach(function (e) {
+        var f = (state.equip && state.equip[e.id]) || {};
+        var hm = window.MAINT ? MAINT.health(e.id) : null;
+        var col = hm === "panne" ? "#c0392b" : hm === "degrade" ? "#e0892a" : hm === "ok" ? "#1a9d5a" : "#c3cad0";
+        var mm = [(f.marque || e.marque || ""), (f.modele || e.modele || "")].filter(function (x) { return x; }).join(" ");
+        var nOpen = window.MAINT ? MAINT.forEquip(e.id).filter(MAINT.isOpen).length : 0;
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 8px;border-left:4px solid ' + col + ';margin-top:4px">' +
+          '<div class="hEq" data-eid="' + esc(e.id) + '" data-rid="' + esc(rm.id) + '" data-zid="' + esc(rm.zoneId) + '" style="flex:1;min-width:0;cursor:pointer">' +
+          '<div style="font-weight:700;font-size:13.5px;line-height:1.25">' + esc(e.name) + (e.qte && +e.qte > 1 ? ' <span style="color:#0d7a6f;font-weight:800">×' + esc(e.qte) + '</span>' : '') +
+          (hm && hm !== "ok" ? ' <span style="color:' + col + ';font-weight:800;font-size:11px">' + MAINT.healthLabel(hm) + '</span>' : '') + '</div>' +
+          '<div class="tiny muted">' + esc(mm || (f.local || "")) + (nOpen ? (mm || f.local ? " · " : "") + nOpen + ' intervention(s) ouverte(s)' : '') + '</div></div>' +
+          '<button class="hEqInter" data-eid="' + esc(e.id) + '" title="Nouvelle intervention" style="border:1.4px solid #d6dbde;background:#fafbfb;border-radius:8px;padding:5px 8px;font-size:15px">🔧</button></div>';
+      });
+    });
+    else html += '<button class="btn sec" id="hShowEq" style="margin-top:8px">Afficher les ' + nEq + ' équipements (' + rooms.length + ' pièces)</button>';
+    html += '</div>';
+
+    /* interventions rattachées au lieu ou à ses équipements */
+    var its = interFor(id).slice().sort(function (a, b) { return (a.date + (a.heure || "")) < (b.date + (b.heure || "")) ? 1 : -1; });
+    var itsOpen = its.filter(function (x) { return MAINT.isOpen(x); });
+    html += '<div class="panel" style="padding:12px"><h2>🔧 Interventions (' + itsOpen.length + ' ouverte' + (itsOpen.length > 1 ? 's' : '') + ' / ' + its.length + ')</h2>';
+    if (!its.length) html += '<div class="tiny muted">Aucune intervention enregistrée sur ce lieu ni sur ses équipements.</div>';
+    itsOpen.concat(its.filter(function (x) { return !MAINT.isOpen(x); })).slice(0, 6).forEach(function (it) {
+      var s = MAINT.statutInfo(it);
+      html += '<div class="hIt" data-iid="' + esc(it._id) + '" style="padding:7px 0;border-top:1px solid #eef1f2;cursor:pointer">' +
+        '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px"><b>' + MAINT.frDate(it.date) + ' · ' + esc(MAINT.natLabel(it)) + '</b>' +
+        '<span style="color:' + s.color + ';font-weight:800;font-size:11.5px;white-space:nowrap">' + esc(s.label.split(" — ")[0].split(" (")[0]) + '</span></div>' +
+        '<div class="tiny muted">' + esc(it.equipTxt || "") + (it.sympt || it.action ? (it.equipTxt ? " — " : "") + esc((it.sympt || it.action).slice(0, 70)) : "") + (it.tech ? ' · ' + esc(it.tech) : '') + '</div></div>';
+    });
+    if (its.length > 6) html += '<div class="tiny muted" style="margin-top:4px">… et ' + (its.length - 6) + ' autre(s) dans le registre des interventions.</div>';
+    html += '<button class="btn sec" id="hNewInter" style="margin-top:8px">＋ Nouvelle intervention sur ce lieu</button></div>';
+
     /* travaux à faire */
     var open = openTodos(r), done = r.todos.filter(function (x) { return x.done; });
     html += '<div class="panel" style="padding:12px"><h2>Travaux à faire (' + open.length + ')</h2>';
@@ -529,6 +637,38 @@
         if (segs) { segs.innerHTML = seg(key, "ok", it.st) + seg(key, "att", it.st) + seg(key, "hs", it.st); bindSegs(); }
       });
     });
+    /* passerelle inventaire */
+    if ($("hShowEq")) $("hShowEq").onclick = function () { V.showEq = true; render(); };
+    document.querySelectorAll(".hEq").forEach(function (el) {
+      el.onclick = function () { view.tdId = el.dataset.zid; view.roomId = el.dataset.rid; view.equipId = el.dataset.eid; view.fromKey = id; nav("equip"); };
+    });
+    document.querySelectorAll(".hEqInter").forEach(function (b2) {
+      b2.onclick = function (ev) { ev.stopPropagation(); if (!window.MAINT) return; MAINT.openForEquipKey(b2.dataset.eid, id); };
+    });
+    document.querySelectorAll(".hRoomAct").forEach(function (b2) {
+      b2.onclick = function () {
+        var rid2 = b2.dataset.rid, tr = treeRooms(), rm = tr.idx[rid2];
+        sheetActions(rm ? (rm.zone + " · " + rm.name) : rid2, [
+          { label: "📋 Ouvrir la pièce dans l'inventaire", cb: function () { view.tdId = rm.zoneId; view.roomId = rid2; view.fromKey = id; nav("room"); } },
+          { label: "✕ Retirer ce lien (la pièce n'est pas dans ce lieu)", danger: true, cb: function () {
+            r.rooms = (r.rooms || []).filter(function (x) { return x !== rid2; });
+            r.roomsOff = r.roomsOff || []; if (r.roomsOff.indexOf(rid2) < 0) r.roomsOff.push(rid2);
+            pushHist(r, "Lien inventaire retiré : " + (rm ? rm.name : rid2), who()); touch("hebg:" + id); render(); } }
+        ]);
+      };
+    });
+    $("hLinkRoom").onclick = function () {
+      var tr = treeRooms(), cur = roomsFor(id);
+      var opts = tr.list.filter(function (rm) { return cur.indexOf(rm.id) < 0; }).map(function (rm) { return { label: rm.zone + " · " + rm.name + " (" + rm.equipment.length + ")", value: rm.id }; });
+      sheetChoose("Lier une pièce de l'inventaire", "Les équipements de cette pièce apparaîtront dans « " + keyLabel(id) + " ».", opts, function (rid2) {
+        if (!rid2) return;
+        r.rooms = r.rooms || []; if (r.rooms.indexOf(rid2) < 0) r.rooms.push(rid2);
+        r.roomsOff = (r.roomsOff || []).filter(function (x) { return x !== rid2; });
+        pushHist(r, "Lien inventaire ajouté : " + (tr.idx[rid2] ? tr.idx[rid2].name : rid2), who()); touch("hebg:" + id); V.showEq = true; render();
+      });
+    };
+    document.querySelectorAll(".hIt").forEach(function (el) { el.onclick = function () { MAINT.openDetail(el.dataset.iid, id); }; });
+    $("hNewInter").onclick = function () { if (window.MAINT) MAINT.openForKey(id); };
     $("hAllOk").onclick = function () {
       sheetConfirm("Tout marquer OK ?", "Tous les points de « " + keyLabel(id) + " » passent en OK (les travaux à faire restent).", "Tout OK", false, function () {
         t.items.forEach(function (key) {
@@ -590,6 +730,7 @@
   /* -------------------- EXPORT xlsx -------------------- */
   function exportXlsx() {
     var wb = XLSX.utils.book_new();
+    var tr0 = treeRooms();
     var allItems = Object.keys(ITEMS);
     var aoa = [["ÉTAT DES LIEUX — MAINTENANCE — HÔTEL WADRA BAY"], ["Généré le", nowDate() + " " + nowTime()], [],
       ["Lieu", "Nom", "État global", "Dernier passage", "Par", "Travaux en attente"].concat(allItems.map(function (k) { return ITEMS[k].label; })).concat(["Observations"])];
@@ -627,6 +768,19 @@
     var ws3 = XLSX.utils.aoa_to_sheet(aoa3);
     ws3["!cols"] = [{ wch: 11 }, { wch: 6 }, { wch: 6 }, { wch: 16 }, { wch: 70 }];
     XLSX.utils.book_append_sheet(wb, ws3, "Historique");
+    /* inventaire par lieu : passerelle inventaire ↔ maintenance */
+    var inv = [["INVENTAIRE PAR LIEU — équipements recensés dans chaque lieu de maintenance"], [], ["Lieu", "Nom du lieu", "Pièce (inventaire)", "Tableau", "Équipement", "Qté", "Marque", "Modèle", "État maintenance", "Interventions ouvertes"]];
+    KEYS.forEach(function (k) {
+      roomsFor(k.id).forEach(function (rid2) {
+        var rm = tr0.idx[rid2]; if (!rm) return;
+        rm.equipment.forEach(function (e) {
+          var f = (state.equip && state.equip[e.id]) || {}, hm = window.MAINT ? MAINT.health(e.id) : null;
+          inv.push([k.id, keyLabel(k.id), rm.name, rm.zone, e.name, e.qte || "", f.marque || e.marque || "", f.modele || e.modele || "", hm ? MAINT.healthLabel(hm) : "", window.MAINT ? MAINT.forEquip(e.id).filter(MAINT.isOpen).length : 0]);
+        });
+      });
+    });
+    var wsI = XLSX.utils.aoa_to_sheet(inv); wsI["!cols"] = [{ wch: 8 }, { wch: 30 }, { wch: 34 }, { wch: 12 }, { wch: 40 }, { wch: 5 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, wsI, "Inventaire par lieu");
     XLSX.writeFile(wb, "WADRA_Bay_Maintenance_Etat_des_lieux_" + nowDate() + ".xlsx");
     toast("Export téléchargé");
   }
@@ -677,7 +831,11 @@
                todo: iss.filter(function (x) { return x.kind === "todo"; }).length, total: iss.length };
     },
     lastDate: function () { var d = ""; KEYS.forEach(function (k) { var r = rec(k.id); if (r && r.date > d) d = r.date; }); return d ? frDate(d) : null; },
-    openKey: function (id) { V.screen = "key"; V.id = id; nav("hebg"); },
+    openKey: function (id) { if (V.id !== id) V.showEq = false; V.screen = "key"; V.id = id; nav("hebg"); },
+    openGrid: function () { V.screen = "grid"; V.id = null; nav("hebg"); },
+    placesForRoom: placesForRoom,
+    roomsFor: roomsFor,
+    interFor: interFor,
     photoAdded: function (key) {
       if (view.name !== "hebg" || V.screen !== "key") return;
       if (key === "hebg_" + V.id) paintPhotos(V.id);
