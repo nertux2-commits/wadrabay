@@ -1056,6 +1056,7 @@ function renderRoom(){
     '</div>' +
     '</div>';
 
+  html += placeChipsHTML(r.id);
   html += '<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#6b7785;margin:4px 2px 9px;font-weight:700">Équipements</h2>';
 
   r.equipment.forEach(e => {
@@ -1088,6 +1089,7 @@ function renderRoom(){
   });
 
   $('addEquip').onclick = () => sheetCatalogPicker(view.roomId, r.name);
+  bindPlaceChips(r.id);
 
   if($('roomUnitsInput')) $('roomUnitsInput').addEventListener('input', function(){
     setRoomUnits(r.id, this.value);
@@ -1096,6 +1098,21 @@ function renderRoom(){
       (n > 1) ? ('⚡ Tu relèves 1 unité-type — le bilan multiplie cette pièce par ' + n + '.')
               : 'Relève 1 unité-type, puis indique ici combien il en existe au total.';
   });
+}
+
+/* ---- passerelle maintenance : lieux auxquels une pièce de l'inventaire est rattachée ---- */
+function placeChipsHTML(roomId){
+  if(!window.HEBG || !HEBG.placesForRoom) return '';
+  const pl = HEBG.placesForRoom(roomId);
+  if(!pl.length) return '';
+  return '<div class="panel" style="padding:10px 12px"><div class="tiny muted" style="margin-bottom:5px">🛠️ Maintenance — ce lieu</div><div style="display:flex;flex-wrap:wrap;gap:6px">' +
+    pl.map((p,i) => '<button class="plChip" data-i="' + i + '" style="border:1.4px solid #bfe0e6;background:#eef8fa;color:#0c3f48;border-radius:9px;padding:6px 10px;font-weight:700;font-size:12.5px">' + esc(p.label) + ' ›</button>').join('') +
+    '</div></div>';
+}
+function bindPlaceChips(roomId){
+  if(!window.HEBG || !HEBG.placesForRoom) return;
+  const pl = HEBG.placesForRoom(roomId);
+  document.querySelectorAll('.plChip').forEach(b => { b.onclick = () => { const p = pl[+b.dataset.i]; if(p.id) HEBG.openKey(p.id); else HEBG.openGrid(); }; });
 }
 
 /* ====================== RENDU : ÉQUIPEMENT ====================== */
@@ -1188,6 +1205,7 @@ function renderEquip(){
   if(window.MAINT){
     const hm = MAINT.health(e.id);
     const its = MAINT.forEquip(e.id).slice().reverse();
+    html += placeChipsHTML(r.id);
     html += '<div class="panel">' +
       '<h2>Maintenance — historique</h2>' +
       (hm ? '<div class="badge" style="background:' + MAINT.healthColor(hm) + ';color:#fff">État : ' + MAINT.healthLabel(hm) + '</div>' : '<div class="tiny muted">Aucune intervention enregistrée sur cet équipement.</div>');
@@ -1313,6 +1331,7 @@ function renderEquip(){
 
   if(window.MAINT){
     if($('newInter')) $('newInter').onclick = () => MAINT.openForEquip(e.id);
+    bindPlaceChips(r.id);
     document.querySelectorAll('.mhist[data-iid]').forEach(el => {
       el.onclick = () => MAINT.openDetail(el.dataset.iid);
     });
@@ -1509,7 +1528,7 @@ function renderWelcome(){
     (hc.total ? ' <span style="background:#fff;color:#1f7a8c;border-radius:9px;padding:1px 8px;font-size:12.5px;vertical-align:2px">' + hc.total + '</span>' : '') + '</div>' +
     '<div style="font-size:12.5px;opacity:.92;margin-top:2px">' +
     (hc.total ? (hc.hs + ' HS · ' + hc.att + ' à surveiller · ' + hc.todo + ' travaux' + (hLast ? ' · dern. passage : ' + hLast : ''))
-              : 'Chambres, bungalows et tous les bâtiments · points à vérifier · travaux à faire') + '</div>' +
+              : 'Chambres, bungalows et tous les bâtiments · équipements recensés · travaux à faire') + '</div>' +
     '</div><div style="font-size:22px;opacity:.8">›</div></div>' +
     '</div>';
 
