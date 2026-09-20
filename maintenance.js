@@ -158,16 +158,17 @@
     if (hit) EQ_CACHE[eqId] = hit;
     return hit;
   }
+  function keyLbl(kid) { return window.HEBG ? HEBG.keyLabel(kid) : "Lieu " + kid; }
   function eqLabel(r) {
-    if (r.hebg) return (window.HEBG ? HEBG.keyLabel(r.hebg) : "Clé " + r.hebg) + (r.equipTxt ? " — " + r.equipTxt : "");
     var inf = eqInfo(r.equip);
     if (inf) return inf.name;
+    if (r.hebg) return keyLbl(r.hebg) + (r.equipTxt ? " — " + r.equipTxt : "");
     return r.equipTxt || "Équipement non précisé";
   }
   function eqPlace(r) {
-    if (r.hebg) return "Hébergement · clé " + r.hebg;
-    var inf = eqInfo(r.equip);
-    return inf ? (inf.zone + " · " + inf.room) : "";
+    var inf = eqInfo(r.equip), p = inf ? (inf.zone + " · " + inf.room) : "";
+    if (r.hebg) p = (p ? p + " · " : "") + "🏠 " + keyLbl(r.hebg);
+    return p;
   }
 
   /* -------------------- utilitaires -------------------- */
@@ -212,7 +213,7 @@
   }
 
   /* -------------------- état interne du module -------------------- */
-  var V = { screen: "dash", id: null, editId: null, draft: null, mode: null, preEquip: null, preKey: null, q: "" };
+  var V = { screen: "dash", id: null, editId: null, draft: null, mode: null, preEquip: null, preKey: null, ret: null, q: "" };
 
   function cleanDraftPhotos() { /* photos prises sur une fiche jamais enregistrée */
     if (!V.draft) return;
@@ -226,9 +227,13 @@
   function back() {
     if (V.screen === "form") {
       if (!V.editId) cleanDraftPhotos();
+      if (!V.id && V.ret && window.HEBG) { var k = V.ret; V.ret = null; V.editId = null; V.mode = null; V.screen = "dash"; HEBG.openKey(k); return true; }
       V.screen = V.id ? "detail" : "dash"; V.editId = null; V.mode = null; render(); return true;
     }
-    if (V.screen === "detail") { V.screen = "dash"; V.id = null; render(); return true; }
+    if (V.screen === "detail") {
+      if (V.ret && window.HEBG) { var k2 = V.ret; V.ret = null; V.screen = "dash"; V.id = null; HEBG.openKey(k2); return true; }
+      V.screen = "dash"; V.id = null; render(); return true;
+    }
     return false;
   }
 
@@ -370,7 +375,7 @@
     }
     html += '<button class="btn sec" id="iEdit" style="margin-top:9px">✏️ Modifier la fiche</button>';
     if (r.equip) html += '<button class="btn sec" id="iGoEq" style="margin-top:9px">📋 Voir l\'équipement (historique complet)</button>';
-    if (r.hebg && window.HEBG) html += '<button class="btn sec" id="iGoKey" style="margin-top:9px">🏠 Ouvrir la clé ' + esc(r.hebg) + '</button>';
+    if (r.hebg && window.HEBG) html += '<button class="btn sec" id="iGoKey" style="margin-top:9px">🏠 Ouvrir le lieu : ' + esc(HEBG.keyLabel(r.hebg)) + '</button>';
     html += '<button class="btn sec" id="iDel" style="margin-top:9px;color:#c0392b;border-color:#e7b3ab">🗑 Supprimer cette fiche</button>';
 
     $("app").innerHTML = html;
@@ -547,7 +552,7 @@
 
     html += '<label class="fld"><span>Équipement concerné</span>' +
       '<button type="button" class="btn sec" id="fEq" style="justify-content:flex-start;text-align:left;padding:10px 12px">' +
-      ((cur.equip || cur.hebg) ? (cur.hebg ? "🏠 " : "📋 ") + esc(eqLabel(cur)) + '<span class="tiny muted" style="margin-left:6px">' + esc(eqPlace(cur)) + '</span>' : "👉 Choisir l\'équipement ou la clé…") +
+      ((cur.equip || cur.hebg) ? (cur.equip ? "📋 " : "🏠 ") + esc(eqLabel(cur)) + '<span class="tiny muted" style="margin-left:6px">' + esc(eqPlace(cur)) + '</span>' : "👉 Choisir l\'équipement ou la clé…") +
       '</button></label>' +
       '<div class="row2">' +
       '<label class="fld"><span>Date (auto, modifiable)</span><input type="date" id="fDate" value="' + esc(cur.date) + '"></label>' +
@@ -684,10 +689,10 @@
       pickEquip(function (eid, kid) {
         if (kid) {
           selEquip.id = null; selEquip.hebg = kid;
-          $("fEq").innerHTML = "🏠 " + esc(HEBG.keyLabel(kid)) + '<span class="tiny muted" style="margin-left:6px">Hébergement · clé ' + esc(kid) + '</span>';
+          $("fEq").innerHTML = "🏠 " + esc(HEBG.keyLabel(kid)) + '<span class="tiny muted" style="margin-left:6px">Lieu ' + esc(kid) + '</span>';
           return;
         }
-        selEquip.id = eid; selEquip.hebg = "";
+        selEquip.id = eid; selEquip.hebg = V.preKey || "";
         var inf = eqInfo(eid);
         $("fEq").innerHTML = "📋 " + esc(inf ? inf.name : eid) +
           '<span class="tiny muted" style="margin-left:6px">' + esc(inf ? (inf.zone + " · " + inf.room) : "") + '</span>';
@@ -859,7 +864,7 @@
     window.scrollTo(0, 0);
     if (V.screen === "form") renderForm();
     else if (V.screen === "detail") renderDetail();
-    else renderDash();
+    else { V.ret = null; renderDash(); }
   }
 
   /* -------------------- API -------------------- */
@@ -891,9 +896,15 @@
       V.draft = "it_" + rndId();
       nav("maint");
     },
-    openDetail: function (id) { V.screen = "detail"; V.id = id; nav("maint"); },
+    all: allInter,
+    openDetail: function (id, fromKey) { V.screen = "detail"; V.id = id; V.ret = fromKey || null; nav("maint"); },
     openForKey: function (kid) {
-      V.screen = "form"; V.editId = null; V.mode = "cor"; V.preEquip = null; V.preKey = kid;
+      V.screen = "form"; V.editId = null; V.id = null; V.mode = "cor"; V.preEquip = null; V.preKey = kid; V.ret = kid;
+      V.draft = "it_" + rndId();
+      nav("maint");
+    },
+    openForEquipKey: function (eqId, kid) { /* intervention sur un équipement recensé, depuis l'écran du lieu */
+      V.screen = "form"; V.editId = null; V.id = null; V.mode = "cor"; V.preEquip = eqId; V.preKey = kid; V.ret = kid;
       V.draft = "it_" + rndId();
       nav("maint");
     },
